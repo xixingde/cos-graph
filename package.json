@@ -1,0 +1,51 @@
+{
+  "name": "graphifyy",
+  "version": "0.8.41",
+  "type": "module",
+  "bin": {
+    "graphify": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "skillgen": "tsx tools/skillgen/index.ts",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
+    "@types/node": "^24.0.3",
+    "@types/pdf-parse": "^1.1.5",
+    "@types/pg": "^8.20.0",
+    "graphology-types": "^0.24.8",
+    "tsup": "^8.5.0",
+    "tsx": "^4.22.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.2",
+    "@aws-sdk/client-bedrock-runtime": "^3.1070.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "adm-zip": "^0.5.17",
+    "chokidar": "^5.0.0",
+    "commander": "^15.0.0",
+    "exceljs": "^4.4.0",
+    "graphifyy": "link:",
+    "graphology": "^0.26.0",
+    "graphology-communities-louvain": "^2.0.2",
+    "graphology-gexf": "^0.13.2",
+    "graphology-layout-forceatlas2": "^0.10.1",
+    "graphology-operators": "^1.6.1",
+    "graphology-shortest-path": "^2.1.0",
+    "isbinaryfile": "^6.0.0",
+    "js-tiktoken": "^1.0.21",
+    "mammoth": "^1.12.0",
+    "openai": "^6.43.0",
+    "pdf-parse": "^2.4.5",
+    "pg": "^8.21.0",
+    "smol-toml": "^1.6.1",
+    "web-tree-sitter": "^0.26.9",
+    "zod": "^4.4.3"
+  }
+}

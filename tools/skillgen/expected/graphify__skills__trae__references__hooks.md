@@ -28,7 +28,7 @@ graphify trae install       # or: graphify trae-cn install
 
 This writes a `## graphify` section to the local `AGENTS.md` that instructs Trae to check the graph before answering codebase questions and rebuild it after code changes. No manual `/graphify` needed in future sessions.
 
-> **Note:** Unlike Claude Code, Trae does NOT support PreToolUse hooks. The AGENTS.md rules are the always-on mechanism — there is no automatic graph rebuild on tool use. Run `/graphify --update` manually after code changes if the graph needs refreshing.
+> **Note:** Unlike Claude Code, Trae does NOT support PreToolUse hooks. The AGENTS.md rules are the always-on mechanism -- there is no automatic graph rebuild on tool use. Run `/graphify --update` manually after code changes if the graph needs refreshing.
 
 ```bash
 graphify trae uninstall     # or: graphify trae-cn uninstall   # remove the section
