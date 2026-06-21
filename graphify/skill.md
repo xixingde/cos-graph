@@ -62,58 +62,49 @@ Follow these steps in order. Do not skip steps.
 
 Only when the path is one or more `https://github.com/...` URLs, or several local subfolders to merge. See `references/github-and-merge.md` for the clone, cross-repo merge, and monorepo flow, then continue with the resolved local path. A plain local path skips this step.
 
-### Step 1 - Ensure graphify is installed
+### Step 1 - Resolve interpreter and save root
+
+graphify is assumed to be already installed. This step only resolves the Node interpreter path and saves the scan root for subsequent steps.
 
 ```bash
-# Detect the correct Python interpreter (handles uv tool, pipx, venv, system installs)
-PYTHON=""
+# Detect the correct Node.js / graphify CLI setup
 GRAPHIFY_BIN=$(which graphify 2>/dev/null)
-# 1. uv tool installs — most reliable on modern Mac/Linux
-if [ -z "$PYTHON" ] && command -v uv >/dev/null 2>&1; then
-    _UV_PY=$(uv tool run graphifyy python -c "import sys; print(sys.executable)" 2>/dev/null)
-    if [ -n "$_UV_PY" ]; then PYTHON="$_UV_PY"; fi
-fi
-# 2. Read shebang from graphify binary (pipx and direct pip installs)
-if [ -z "$PYTHON" ] && [ -n "$GRAPHIFY_BIN" ]; then
-    _SHEBANG=$(head -1 "$GRAPHIFY_BIN" | tr -d '#!')
+NODE=""
+# 1. If graphify binary exists, derive the Node interpreter from its shebang or environment
+if [ -n "$GRAPHIFY_BIN" ]; then
+    _SHEBANG=$(head -1 "$GRAPHIFY_BIN" | sed 's/^#!//')
     case "$_SHEBANG" in
-        *[!a-zA-Z0-9/_.-]*) ;;
-        *) "$_SHEBANG" -c "import graphify" 2>/dev/null && PYTHON="$_SHEBANG" ;;
+        *node*) NODE="$_SHEBANG" ;;
+        *) NODE="" ;;
     esac
 fi
-# 3. Fall back to python3
-if [ -z "$PYTHON" ]; then PYTHON="python3"; fi
-if ! "$PYTHON" -c "import graphify" 2>/dev/null; then
-    if command -v uv >/dev/null 2>&1; then
-        uv tool install --upgrade graphifyy -q 2>&1 | tail -3
-        _UV_PY=$(uv tool run graphifyy python -c "import sys; print(sys.executable)" 2>/dev/null)
-        if [ -n "$_UV_PY" ]; then PYTHON="$_UV_PY"; fi
-    else
-        "$PYTHON" -m pip install graphifyy -q 2>/dev/null \
-          || "$PYTHON" -m pip install graphifyy -q --break-system-packages 2>&1 | tail -3
-    fi
-fi
+# 2. Fall back to node from PATH
+if [ -z "$NODE" ]; then NODE="node"; fi
 # Write interpreter path for all subsequent steps (persists across invocations)
 mkdir -p graphify-out
-"$PYTHON" -c "import sys; open('graphify-out/.graphify_python', 'w', encoding='utf-8').write(sys.executable)"
+echo "$NODE" > graphify-out/.graphify_node
 # Save scan root so `graphify update` (no args) knows where to look next time
 echo "$(cd INPUT_PATH && pwd)" > graphify-out/.graphify_root
 ```
 
-If the import succeeds, print nothing and move straight to Step 2.
+Move straight to Step 2.
 
-**In every subsequent bash block, replace `python3` with `$(cat graphify-out/.graphify_python)` to use the correct interpreter.**
+**In every subsequent bash block, replace `node` with `$(cat graphify-out/.graphify_node)` to use the correct interpreter.**
 
 ### Step 2 - Detect files
 
 ```bash
-$(cat graphify-out/.graphify_python) -c "
-import json
-from graphify.detect import detect
-from pathlib import Path
-result = detect(Path('INPUT_PATH'))
-print(json.dumps(result, ensure_ascii=False))
-" > graphify-out/.graphify_detect.json
+$(cat graphify-out/.graphify_node) -e "
+const { detect } = require('graphifyy');
+const fs = require('fs');
+const result = detect('INPUT_PATH');
+fs.writeFileSync('graphify-out/.graphify_detect.json', JSON.stringify(result, null, 2));
+" || $(cat graphify-out/.graphify_node) --input-type=module -e "
+import { detect } from 'graphifyy';
+import fs from 'fs';
+const result = detect('INPUT_PATH');
+fs.writeFileSync('graphify-out/.graphify_detect.json', JSON.stringify(result, null, 2));
+"
 ```
 
 Replace INPUT_PATH with the actual path the user provided. Do NOT cat or print the JSON - read it silently and present a clean summary instead:
@@ -152,7 +143,7 @@ Skip this step entirely if `detect` returned zero `video` files. When the corpus
 This step has two parts: **structural extraction** (deterministic, free) and **semantic extraction** (LLM, costs tokens).
 
 **Before dispatching subagents:** check whether `GEMINI_API_KEY` or `GOOGLE_API_KEY` is set. If neither is set, print this one-liner to the user:
-> Tip: set `GEMINI_API_KEY` or `GOOGLE_API_KEY` to use Gemini for semantic extraction (`pip install 'graphifyy[gemini]'`).
+> Tip: set `GEMINI_API_KEY` or `GOOGLE_API_KEY` to use Gemini for semantic extraction.
 
 Print it once, then continue. If `GEMINI_API_KEY` or `GOOGLE_API_KEY` IS set, use `graphify.llm.extract_corpus_parallel(files, backend="gemini")` for semantic extraction instead of dispatching Claude subagents. The default Gemini model is `gemini-3-flash-preview`; set `GRAPHIFY_GEMINI_MODEL` or pass `--model` in headless CLI flows to override it.
 
@@ -167,24 +158,33 @@ Note: Parallelizing AST + semantic saves 5-15s on large corpora. AST is determin
 For any code files detected, run AST extraction in parallel with Part B subagents:
 
 ```bash
-$(cat graphify-out/.graphify_python) -c "
-import sys, json
-from graphify.extract import collect_files, extract
-from pathlib import Path
-import json
+$(cat graphify-out/.graphify_node) --input-type=module -e "
+import { collectFiles, extract } from 'graphifyy';
+import fs from 'fs';
+import path from 'path';
 
-code_files = []
-detect = json.loads(Path('graphify-out/.graphify_detect.json').read_text(encoding=\"utf-8\"))
-for f in detect.get('files', {}).get('code', []):
-    code_files.extend(collect_files(Path(f)) if Path(f).is_dir() else [Path(f)])
+const detect = JSON.parse(fs.readFileSync('graphify-out/.graphify_detect.json', 'utf-8'));
+const codePaths = detect.files?.code || [];
+const codeFiles = [];
+for (const f of codePaths) {
+  try {
+    const stat = fs.statSync(f);
+    if (stat.isDirectory()) {
+      codeFiles.push(...collectFiles(f));
+    } else {
+      codeFiles.push(path.resolve(f));
+    }
+  } catch { /* skip missing */ }
+}
 
-if code_files:
-    result = extract(code_files, cache_root=Path('.'))
-    Path('graphify-out/.graphify_ast.json').write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding=\"utf-8\")
-    print(f'AST: {len(result[\"nodes\"])} nodes, {len(result[\"edges\"])} edges')
-else:
-    Path('graphify-out/.graphify_ast.json').write_text(json.dumps({'nodes':[],'edges':[],'input_tokens':0,'output_tokens':0}, ensure_ascii=False), encoding=\"utf-8\")
-    print('No code files - skipping AST extraction')
+if (codeFiles.length > 0) {
+  const result = extract(codeFiles, '.');
+  fs.writeFileSync('graphify-out/.graphify_ast.json', JSON.stringify(result, null, 2));
+  console.log('AST: ' + result.nodes.length + ' nodes, ' + result.edges.length + ' edges');
+} else {
+  fs.writeFileSync('graphify-out/.graphify_ast.json', JSON.stringify({nodes:[],edges:[],input_tokens:0,output_tokens:0}));
+  console.log('No code files - skipping AST extraction');
+}
 "
 ```
 
@@ -205,20 +205,22 @@ Before dispatching subagents, print a timing estimate:
 Before dispatching any subagents, check which files already have cached extraction results:
 
 ```bash
-$(cat graphify-out/.graphify_python) -c "
-import json
-from graphify.cache import check_semantic_cache
-from pathlib import Path
+$(cat graphify-out/.graphify_node) --input-type=module -e "
+import { checkSemanticCache } from 'graphifyy';
+import fs from 'fs';
 
-detect = json.loads(Path('graphify-out/.graphify_detect.json').read_text(encoding=\"utf-8\"))
-all_files = [f for files in detect['files'].values() for f in files]
+const detect = JSON.parse(fs.readFileSync('graphify-out/.graphify_detect.json', 'utf-8'));
+const allFiles = Object.values(detect.files).flat();
 
-cached_nodes, cached_edges, cached_hyperedges, uncached = check_semantic_cache(all_files)
+const { cachedNodes, cachedEdges, cachedHyperedges, uncachedFiles } = checkSemanticCache(allFiles, '.');
 
-if cached_nodes or cached_edges or cached_hyperedges:
-    Path('graphify-out/.graphify_cached.json').write_text(json.dumps({'nodes': cached_nodes, 'edges': cached_edges, 'hyperedges': cached_hyperedges}, ensure_ascii=False), encoding=\"utf-8\")
-Path('graphify-out/.graphify_uncached.txt').write_text('\n'.join(uncached), encoding=\"utf-8\")
-print(f'Cache: {len(all_files)-len(uncached)} files hit, {len(uncached)} files need extraction')
+if (cachedNodes.length > 0 || cachedEdges.length > 0 || cachedHyperedges.length > 0) {
+  fs.writeFileSync('graphify-out/.graphify_cached.json', JSON.stringify({
+    nodes: cachedNodes, edges: cachedEdges, hyperedges: cachedHyperedges
+  }));
+}
+fs.writeFileSync('graphify-out/.graphify_uncached.txt', uncachedFiles.join('\n'));
+console.log('Cache: ' + (allFiles.length - uncachedFiles.length) + ' files hit, ' + uncachedFiles.length + ' files need extraction');
 "
 ```
 
@@ -266,69 +268,82 @@ If more than half the chunks failed or are missing, stop and tell the user to re
 
 Merge all chunk files into `.graphify_semantic_new.json`. **After each Agent call completes, read the real token counts from the Agent tool result's `usage` field and write them back into the chunk JSON before merging** — the chunk JSON itself always has placeholder zeros. Then run:
 ```bash
-$(cat graphify-out/.graphify_python) -c "
-import json, glob
-from pathlib import Path
+$(cat graphify-out/.graphify_node) --input-type=module -e "
+import fs from 'fs';
+import path from 'path';
+import { glob } from 'glob';
 
-chunks = sorted(glob.glob('graphify-out/.graphify_chunk_*.json'))
-all_nodes, all_edges, all_hyperedges = [], [], []
-total_in, total_out = 0, 0
-for c in chunks:
-    d = json.loads(Path(c).read_text(encoding=\"utf-8\"))
-    all_nodes += d.get('nodes', [])
-    all_edges += d.get('edges', [])
-    all_hyperedges += d.get('hyperedges', [])
-    total_in += d.get('input_tokens', 0)
-    total_out += d.get('output_tokens', 0)
-Path('graphify-out/.graphify_semantic_new.json').write_text(json.dumps({
-    'nodes': all_nodes, 'edges': all_edges, 'hyperedges': all_hyperedges,
-    'input_tokens': total_in, 'output_tokens': total_out,
-}, indent=2, ensure_ascii=False), encoding=\"utf-8\")
-print(f'Merged {len(chunks)} chunks: {total_in:,} in / {total_out:,} out tokens')
+const chunks = await glob('graphify-out/.graphify_chunk_*.json');
+const allNodes = [], allEdges = [], allHyperedges = [];
+let totalIn = 0, totalOut = 0;
+for (const c of chunks.sort()) {
+  const d = JSON.parse(fs.readFileSync(c, 'utf-8'));
+  allNodes.push(...(d.nodes || []));
+  allEdges.push(...(d.edges || []));
+  allHyperedges.push(...(d.hyperedges || []));
+  totalIn += (d.input_tokens || 0);
+  totalOut += (d.output_tokens || 0);
+}
+fs.writeFileSync('graphify-out/.graphify_semantic_new.json', JSON.stringify({
+  nodes: allNodes, edges: allEdges, hyperedges: allHyperedges,
+  input_tokens: totalIn, output_tokens: totalOut,
+}, null, 2));
+console.log('Merged ' + chunks.length + ' chunks: ' + totalIn.toLocaleString() + ' in / ' + totalOut.toLocaleString() + ' out tokens');
 "
 ```
 
 Save new results to cache:
 ```bash
-$(cat graphify-out/.graphify_python) -c "
-import json
-from graphify.cache import save_semantic_cache
-from pathlib import Path
+$(cat graphify-out/.graphify_node) --input-type=module -e "
+import { saveSemanticCache } from 'graphifyy';
+import fs from 'fs';
 
-new = json.loads(Path('graphify-out/.graphify_semantic_new.json').read_text(encoding=\"utf-8\")) if Path('graphify-out/.graphify_semantic_new.json').exists() else {'nodes':[],'edges':[],'hyperedges':[]}
-saved = save_semantic_cache(new.get('nodes', []), new.get('edges', []), new.get('hyperedges', []))
-print(f'Cached {saved} files')
+const newExists = fs.existsSync('graphify-out/.graphify_semantic_new.json');
+const newResult = newExists
+  ? JSON.parse(fs.readFileSync('graphify-out/.graphify_semantic_new.json', 'utf-8'))
+  : { nodes: [], edges: [], hyperedges: [] };
+const saved = saveSemanticCache(
+  newResult.nodes || [],
+  newResult.edges || [],
+  newResult.hyperedges || [],
+  '.'
+);
+console.log('Cached ' + saved + ' files');
 "
 ```
 
 Merge cached + new results into `graphify-out/.graphify_semantic.json`:
 ```bash
-$(cat graphify-out/.graphify_python) -c "
-import json
-from pathlib import Path
+$(cat graphify-out/.graphify_node) --input-type=module -e "
+import fs from 'fs';
 
-cached = json.loads(Path('graphify-out/.graphify_cached.json').read_text(encoding=\"utf-8\")) if Path('graphify-out/.graphify_cached.json').exists() else {'nodes':[],'edges':[],'hyperedges':[]}
-new = json.loads(Path('graphify-out/.graphify_semantic_new.json').read_text(encoding=\"utf-8\")) if Path('graphify-out/.graphify_semantic_new.json').exists() else {'nodes':[],'edges':[],'hyperedges':[]}
+const cachedExists = fs.existsSync('graphify-out/.graphify_cached.json');
+const cached = cachedExists
+  ? JSON.parse(fs.readFileSync('graphify-out/.graphify_cached.json', 'utf-8'))
+  : { nodes: [], edges: [], hyperedges: [] };
+const newExists = fs.existsSync('graphify-out/.graphify_semantic_new.json');
+const newResult = newExists
+  ? JSON.parse(fs.readFileSync('graphify-out/.graphify_semantic_new.json', 'utf-8'))
+  : { nodes: [], edges: [], hyperedges: [] };
 
-all_nodes = cached['nodes'] + new.get('nodes', [])
-all_edges = cached['edges'] + new.get('edges', [])
-all_hyperedges = cached.get('hyperedges', []) + new.get('hyperedges', [])
-seen = set()
-deduped = []
-for n in all_nodes:
-    if n['id'] not in seen:
-        seen.add(n['id'])
-        deduped.append(n)
-
-merged = {
-    'nodes': deduped,
-    'edges': all_edges,
-    'hyperedges': all_hyperedges,
-    'input_tokens': new.get('input_tokens', 0),
-    'output_tokens': new.get('output_tokens', 0),
+const allNodes = [...(cached.nodes || []), ...(newResult.nodes || [])];
+const allEdges = [...(cached.edges || []), ...(newResult.edges || [])];
+const allHyperedges = [...(cached.hyperedges || []), ...(newResult.hyperedges || [])];
+const seen = new Set();
+const deduped = [];
+for (const n of allNodes) {
+  if (!seen.has(n.id)) { seen.add(n.id); deduped.push(n); }
 }
-Path('graphify-out/.graphify_semantic.json').write_text(json.dumps(merged, indent=2, ensure_ascii=False), encoding=\"utf-8\")
-print(f'Extraction complete - {len(deduped)} nodes, {len(all_edges)} edges ({len(cached[\"nodes\"])} from cache, {len(new.get(\"nodes\",[]))} new)')
+
+const merged = {
+  nodes: deduped,
+  edges: allEdges,
+  hyperedges: allHyperedges,
+  input_tokens: newResult.input_tokens || 0,
+  output_tokens: newResult.output_tokens || 0,
+};
+fs.writeFileSync('graphify-out/.graphify_semantic.json', JSON.stringify(merged, null, 2));
+console.log('Extraction complete - ' + deduped.length + ' nodes, ' + allEdges.length + ' edges (' + (cached.nodes || []).length + ' from cache, ' + (newResult.nodes || []).length + ' new)');
 "
 ```
 Clean up temp files: `rm -f graphify-out/.graphify_cached.json graphify-out/.graphify_uncached.txt graphify-out/.graphify_semantic_new.json`
@@ -336,84 +351,113 @@ Clean up temp files: `rm -f graphify-out/.graphify_cached.json graphify-out/.gra
 #### Part C - Merge AST + semantic into final extraction
 
 ```bash
-$(cat graphify-out/.graphify_python) -c "
-import sys, json
-from pathlib import Path
+$(cat graphify-out/.graphify_node) --input-type=module -e "
+import fs from 'fs';
 
-ast = json.loads(Path('graphify-out/.graphify_ast.json').read_text(encoding=\"utf-8\"))
-sem = json.loads(Path('graphify-out/.graphify_semantic.json').read_text(encoding=\"utf-8\"))
+const ast = JSON.parse(fs.readFileSync('graphify-out/.graphify_ast.json', 'utf-8'));
+const sem = JSON.parse(fs.readFileSync('graphify-out/.graphify_semantic.json', 'utf-8'));
 
-# Merge: AST nodes first, semantic nodes deduplicated by id
-seen = {n['id'] for n in ast['nodes']}
-merged_nodes = list(ast['nodes'])
-for n in sem['nodes']:
-    if n['id'] not in seen:
-        merged_nodes.append(n)
-        seen.add(n['id'])
-
-merged_edges = ast['edges'] + sem['edges']
-merged_hyperedges = sem.get('hyperedges', [])
-merged = {
-    'nodes': merged_nodes,
-    'edges': merged_edges,
-    'hyperedges': merged_hyperedges,
-    'input_tokens': sem.get('input_tokens', 0),
-    'output_tokens': sem.get('output_tokens', 0),
+// Merge: AST nodes first, semantic nodes deduplicated by id
+const seen = new Set(ast.nodes.map(n => n.id));
+const mergedNodes = [...ast.nodes];
+for (const n of sem.nodes) {
+  if (!seen.has(n.id)) {
+    mergedNodes.push(n);
+    seen.add(n.id);
+  }
 }
-Path('graphify-out/.graphify_extract.json').write_text(json.dumps(merged, indent=2, ensure_ascii=False), encoding=\"utf-8\")
-total = len(merged_nodes)
-edges = len(merged_edges)
-print(f'Merged: {total} nodes, {edges} edges ({len(ast[\"nodes\"])} AST + {len(sem[\"nodes\"])} semantic)')
+
+const mergedEdges = [...ast.edges, ...sem.edges];
+const mergedHyperedges = sem.hyperedges || [];
+const merged = {
+  nodes: mergedNodes,
+  edges: mergedEdges,
+  hyperedges: mergedHyperedges,
+  input_tokens: sem.input_tokens || 0,
+  output_tokens: sem.output_tokens || 0,
+};
+fs.writeFileSync('graphify-out/.graphify_extract.json', JSON.stringify(merged, null, 2));
+const total = mergedNodes.length;
+const edges = mergedEdges.length;
+console.log('Merged: ' + total + ' nodes, ' + edges + ' edges (' + ast.nodes.length + ' AST + ' + sem.nodes.length + ' semantic)');
 "
 ```
 
 ### Step 4 - Build graph, cluster, analyze, generate outputs
 
-**Before starting:** note whether `--directed` was given. If so, pass `directed=True` to `build_from_json()` in the code block below. This builds a `DiGraph` that preserves edge direction (source→target) instead of the default undirected `Graph`.
+**Before starting:** note whether `--directed` was given. If so, pass `directed: true` to `buildFromJson()` in the code block below. This builds a `DiGraph` that preserves edge direction (source→target) instead of the default undirected `Graph`.
 
 ```bash
 mkdir -p graphify-out
-$(cat graphify-out/.graphify_python) -c "
-import sys, json
-from graphify.build import build_from_json
-from graphify.cluster import cluster, score_all
-from graphify.analyze import god_nodes, surprising_connections, suggest_questions
-from graphify.report import generate
-from graphify.export import to_json
-from pathlib import Path
+$(cat graphify-out/.graphify_node) --input-type=module -e "
+import fs from 'fs';
+import { buildFromJson } from 'graphifyy';
+import { cluster, scoreAll } from 'graphifyy';
+import { godNodes, surprisingConnections, suggestQuestions } from 'graphifyy';
+import { generate } from 'graphifyy';
+import { toJson } from 'graphifyy';
 
-extraction = json.loads(Path('graphify-out/.graphify_extract.json').read_text(encoding=\"utf-8\"))
-detection  = json.loads(Path('graphify-out/.graphify_detect.json').read_text(encoding=\"utf-8\"))
+const extraction = JSON.parse(fs.readFileSync('graphify-out/.graphify_extract.json', 'utf-8'));
+const detection  = JSON.parse(fs.readFileSync('graphify-out/.graphify_detect.json', 'utf-8'));
 
-# root= mirrors the --update runbook (#1361): relativize source_file to the same
-# base so the full build and incremental --update never drift apart on re-extract.
-G = build_from_json(extraction, root='INPUT_PATH')
-communities = cluster(G)
-cohesion = score_all(G, communities)
-tokens = {'input': extraction.get('input_tokens', 0), 'output': extraction.get('output_tokens', 0)}
-gods = god_nodes(G)
-surprises = surprising_connections(G, communities)
-labels = {cid: 'Community ' + str(cid) for cid in communities}
-# Placeholder questions - regenerated with real labels in Step 5
-questions = suggest_questions(G, communities, labels)
-
-report = generate(G, communities, cohesion, labels, gods, surprises, detection, tokens, '.', suggested_questions=questions)
-Path('graphify-out/GRAPH_REPORT.md').write_text(report, encoding=\"utf-8\")
-to_json(G, communities, 'graphify-out/graph.json')
-
-analysis = {
-    'communities': {str(k): v for k, v in communities.items()},
-    'cohesion': {str(k): v for k, v in cohesion.items()},
-    'gods': gods,
-    'surprises': surprises,
-    'questions': questions,
+// root= mirrors the --update runbook (#1361): relativize source_file to the same
+// base so the full build and incremental --update never drift apart on re-extract.
+const G = buildFromJson(extraction, { root: 'INPUT_PATH' });
+const communities = cluster(G);
+const cohesion = scoreAll(G, communities);
+const tokens = { input: extraction.input_tokens || 0, output: extraction.output_tokens || 0 };
+const gods = godNodes(G);
+const surprises = surprisingConnections(G, communities);
+const labels = {};
+for (const cid of Object.values(communities)) {
+  if (labels[cid] === undefined) labels[cid] = 'Community ' + cid;
 }
-Path('graphify-out/.graphify_analysis.json').write_text(json.dumps(analysis, indent=2, ensure_ascii=False), encoding=\"utf-8\")
-if G.number_of_nodes() == 0:
-    print('ERROR: Graph is empty - extraction produced no nodes.')
-    print('Possible causes: all files were skipped, binary-only corpus, or extraction failed.')
-    raise SystemExit(1)
-print(f'Graph: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges, {len(communities)} communities')
+// Placeholder questions - regenerated with real labels in Step 5
+const questions = suggestQuestions(G, communities, labels);
+
+const report = generate({
+  graph: G,
+  communities: (() => {
+    const groups = {};
+    for (const [node, cid] of Object.entries(communities)) {
+      if (!groups[cid]) groups[cid] = [];
+      groups[cid].push(node);
+    }
+    return groups;
+  })(),
+  cohesionScores: cohesion,
+  communityLabels: labels,
+  godNodeList: gods,
+  surpriseList: surprises,
+  detectionResult: detection,
+  tokenCost: tokens,
+  root: '.',
+  suggestedQuestions: questions,
+});
+fs.writeFileSync('graphify-out/GRAPH_REPORT.md', report, 'utf-8');
+toJson(G, (() => {
+  const groups = {};
+  for (const [node, cid] of Object.entries(communities)) {
+    if (!groups[cid]) groups[cid] = [];
+    groups[cid].push(node);
+  }
+  return groups;
+})(), 'graphify-out/graph.json');
+
+const analysis = {
+  communities: communities,
+  cohesion: cohesion,
+  gods: gods,
+  surprises: surprises,
+  questions: questions,
+};
+fs.writeFileSync('graphify-out/.graphify_analysis.json', JSON.stringify(analysis, null, 2));
+if (G.order === 0) {
+  console.log('ERROR: Graph is empty - extraction produced no nodes.');
+  console.log('Possible causes: all files were skipped, binary-only corpus, or extraction failed.');
+  process.exit(1);
+}
+console.log('Graph: ' + G.order + ' nodes, ' + G.size + ' edges, ' + new Set(Object.values(communities)).size + ' communities');
 "
 ```
 
@@ -428,38 +472,57 @@ Read `graphify-out/.graphify_analysis.json`. For each community key, look at its
 Then regenerate the report and save the labels for the visualizer:
 
 ```bash
-$(cat graphify-out/.graphify_python) -c "
-import sys, json
-from graphify.build import build_from_json
-from graphify.cluster import score_all
-from graphify.analyze import god_nodes, surprising_connections, suggest_questions
-from graphify.report import generate
-from pathlib import Path
+$(cat graphify-out/.graphify_node) --input-type=module -e "
+import fs from 'fs';
+import { buildFromJson } from 'graphifyy';
+import { scoreAll } from 'graphifyy';
+import { godNodes, surprisingConnections, suggestQuestions } from 'graphifyy';
+import { generate } from 'graphifyy';
 
-extraction = json.loads(Path('graphify-out/.graphify_extract.json').read_text(encoding=\"utf-8\"))
-detection  = json.loads(Path('graphify-out/.graphify_detect.json').read_text(encoding=\"utf-8\"))
-analysis   = json.loads(Path('graphify-out/.graphify_analysis.json').read_text(encoding=\"utf-8\"))
+const extraction = JSON.parse(fs.readFileSync('graphify-out/.graphify_extract.json', 'utf-8'));
+const detection  = JSON.parse(fs.readFileSync('graphify-out/.graphify_detect.json', 'utf-8'));
+const analysis   = JSON.parse(fs.readFileSync('graphify-out/.graphify_analysis.json', 'utf-8'));
 
-# root= as in Step 4 / the --update runbook (#1361) — same base for node-key parity.
-G = build_from_json(extraction, root='INPUT_PATH')
-communities = {int(k): v for k, v in analysis['communities'].items()}
-cohesion = {int(k): v for k, v in analysis['cohesion'].items()}
-tokens = {'input': extraction.get('input_tokens', 0), 'output': extraction.get('output_tokens', 0)}
+// root= as in Step 4 / the --update runbook (#1361) — same base for node-key parity.
+const G = buildFromJson(extraction, { root: 'INPUT_PATH' });
+const communities = {};
+for (const [k, v] of Object.entries(analysis.communities)) { communities[Number(k)] = v; }
+const cohesion = {};
+for (const [k, v] of Object.entries(analysis.cohesion)) { cohesion[Number(k)] = v; }
+const tokens = { input: extraction.input_tokens || 0, output: extraction.output_tokens || 0 };
 
-# LABELS - replace these with the names you chose above
-labels = LABELS_DICT
+// LABELS - replace these with the names you chose above
+const labels = LABELS_DICT;
 
-# Regenerate questions with real community labels (labels affect question phrasing)
-questions = suggest_questions(G, communities, labels)
+// Regenerate questions with real community labels (labels affect question phrasing)
+const questions = suggestQuestions(G, communities, labels);
 
-report = generate(G, communities, cohesion, labels, analysis['gods'], analysis['surprises'], detection, tokens, '.', suggested_questions=questions)
-Path('graphify-out/GRAPH_REPORT.md').write_text(report, encoding=\"utf-8\")
-Path('graphify-out/.graphify_labels.json').write_text(json.dumps({str(k): v for k, v in labels.items()}, ensure_ascii=False), encoding=\"utf-8\")
-print('Report updated with community labels')
+const report = generate({
+  graph: G,
+  communities: (() => {
+    const groups = {};
+    for (const [node, cid] of Object.entries(communities)) {
+      if (!groups[cid]) groups[cid] = [];
+      groups[cid].push(node);
+    }
+    return groups;
+  })(),
+  cohesionScores: cohesion,
+  communityLabels: labels,
+  godNodeList: analysis.gods,
+  surpriseList: analysis.surprises,
+  detectionResult: detection,
+  tokenCost: tokens,
+  root: '.',
+  suggestedQuestions: questions,
+});
+fs.writeFileSync('graphify-out/GRAPH_REPORT.md', report, 'utf-8');
+fs.writeFileSync('graphify-out/.graphify_labels.json', JSON.stringify(labels));
+console.log('Report updated with community labels');
 "
 ```
 
-Replace `LABELS_DICT` with the actual dict you constructed (e.g. `{0: "Attention Mechanism", 1: "Training Pipeline"}`).
+Replace `LABELS_DICT` with the actual object you constructed (e.g. `{0: "Attention Mechanism", 1: "Training Pipeline"}`).
 Replace INPUT_PATH with the actual path.
 
 ### Step 6 - Generate Obsidian vault (opt-in) + HTML
@@ -491,41 +554,42 @@ These run only when their flag is present (`--wiki`, `--neo4j`/`--neo4j-push`, `
 ### Step 9 - Save manifest, update cost tracker, clean up, and report
 
 ```bash
-$(cat graphify-out/.graphify_python) -c "
-import json
-from pathlib import Path
-from datetime import datetime, timezone
-from graphify.detect import save_manifest
+$(cat graphify-out/.graphify_node) --input-type=module -e "
+import fs from 'fs';
+import { saveManifest } from 'graphifyy';
 
-# Save manifest for --update
-detect = json.loads(Path('graphify-out/.graphify_detect.json').read_text(encoding=\"utf-8\"))
-# In --update mode, 'all_files' carries the full corpus; 'files' is the changed
-# subset. Full-rebuild mode populates only 'files', so the fallback handles that.
-save_manifest(detect.get('all_files') or detect['files'])
+// Save manifest for --update
+const detect = JSON.parse(fs.readFileSync('graphify-out/.graphify_detect.json', 'utf-8'));
+// In --update mode, 'all_files' carries the full corpus; 'files' is the changed
+// subset. Full-rebuild mode populates only 'files', so the fallback handles that.
+const filesToSave = detect.all_files || detect.files;
+saveManifest(filesToSave);
 
-# Update cumulative cost tracker
-extract = json.loads(Path('graphify-out/.graphify_extract.json').read_text(encoding=\"utf-8\"))
-input_tok = extract.get('input_tokens', 0)
-output_tok = extract.get('output_tokens', 0)
+// Update cumulative cost tracker
+const extract = JSON.parse(fs.readFileSync('graphify-out/.graphify_extract.json', 'utf-8'));
+const inputTok = extract.input_tokens || 0;
+const outputTok = extract.output_tokens || 0;
 
-cost_path = Path('graphify-out/cost.json')
-if cost_path.exists():
-    cost = json.loads(cost_path.read_text(encoding=\"utf-8\"))
-else:
-    cost = {'runs': [], 'total_input_tokens': 0, 'total_output_tokens': 0}
+const costPath = 'graphify-out/cost.json';
+let cost;
+if (fs.existsSync(costPath)) {
+  cost = JSON.parse(fs.readFileSync(costPath, 'utf-8'));
+} else {
+  cost = { runs: [], total_input_tokens: 0, total_output_tokens: 0 };
+}
 
-cost['runs'].append({
-    'date': datetime.now(timezone.utc).isoformat(),
-    'input_tokens': input_tok,
-    'output_tokens': output_tok,
-    'files': detect.get('total_files', 0),
-})
-cost['total_input_tokens'] += input_tok
-cost['total_output_tokens'] += output_tok
-cost_path.write_text(json.dumps(cost, indent=2, ensure_ascii=False), encoding=\"utf-8\")
+cost.runs.push({
+  date: new Date().toISOString(),
+  input_tokens: inputTok,
+  output_tokens: outputTok,
+  files: detect.total_files || 0,
+});
+cost.total_input_tokens += inputTok;
+cost.total_output_tokens += outputTok;
+fs.writeFileSync(costPath, JSON.stringify(cost, null, 2));
 
-print(f'This run: {input_tok:,} input tokens, {output_tok:,} output tokens')
-print(f'All time: {cost[\"total_input_tokens\"]:,} input, {cost[\"total_output_tokens\"]:,} output ({len(cost[\"runs\"])} runs)')
+console.log('This run: ' + inputTok.toLocaleString() + ' input tokens, ' + outputTok.toLocaleString() + ' output tokens');
+console.log('All time: ' + cost.total_input_tokens.toLocaleString() + ' input, ' + cost.total_output_tokens.toLocaleString() + ' output (' + cost.runs.length + ' runs)');
 "
 rm -f graphify-out/.graphify_detect.json graphify-out/.graphify_extract.json graphify-out/.graphify_ast.json graphify-out/.graphify_semantic.json graphify-out/.graphify_analysis.json
 find graphify-out -maxdepth 1 -name '.graphify_chunk_*.json' -delete 2>/dev/null
@@ -565,19 +629,19 @@ The graph is the map. Your job after the pipeline is to be the guide.
 
 ## Interpreter guard for subcommands
 
-Before running any subcommand below (`--update`, `--cluster-only`, `query`, `path`, `explain`, `add`), check that `.graphify_python` exists. If it's missing (e.g. user deleted `graphify-out/`), re-resolve the interpreter first:
+Before running any subcommand below (`--update`, `--cluster-only`, `query`, `path`, `explain`, `add`), check that `.graphify_node` exists. If it's missing (e.g. user deleted `graphify-out/`), re-resolve the interpreter first. graphify is assumed to be already installed — do not attempt to install it.
 
 ```bash
-if [ ! -f graphify-out/.graphify_python ]; then
+if [ ! -f graphify-out/.graphify_node ]; then
     GRAPHIFY_BIN=$(which graphify 2>/dev/null)
     if [ -n "$GRAPHIFY_BIN" ]; then
-        PYTHON=$(head -1 "$GRAPHIFY_BIN" | tr -d '#!')
-        case "$PYTHON" in *[!a-zA-Z0-9/_.-]*) PYTHON="python3" ;; esac
+        NODE=$(head -1 "$GRAPHIFY_BIN" | sed 's/^#!//')
+        case "$NODE" in *node*) ;; *) NODE="node" ;; esac
     else
-        PYTHON="python3"
+        NODE="node"
     fi
     mkdir -p graphify-out
-    "$PYTHON" -c "import sys; open('graphify-out/.graphify_python', 'w', encoding='utf-8').write(sys.executable)"
+    echo "$NODE" > graphify-out/.graphify_node
 fi
 ```
 
@@ -595,7 +659,7 @@ When `graphify-out/graph.json` already exists and the user asks a question about
 graphify query "<question>"
 ```
 
-Before traversal, expand the question against the graph's own vocabulary so a wording mismatch does not collapse the answer to noise. If the `graphify query` CLI is unavailable, fall back to an inline NetworkX traversal of `graphify-out/graph.json`. Answer using only what the graph output contains, and quote `source_location` when citing a specific fact. For that vocab-expansion step, the BFS/DFS traversal modes, the `--budget` cap, the NetworkX fallback, `save-result` feedback, and the `/graphify path` and `/graphify explain` flows, see `references/query.md`.
+Before traversal, expand the question against the graph's own vocabulary so a wording mismatch does not collapse the answer to noise. If the `graphify query` CLI is unavailable, fall back to an inline Graphology traversal of `graphify-out/graph.json`. Answer using only what the graph output contains, and quote `source_location` when citing a specific fact. For that vocab-expansion step, the BFS/DFS traversal modes, the `--budget` cap, the Graphology fallback, `save-result` feedback, and the `/graphify path` and `/graphify explain` flows, see `references/query.md`.
 
 ---
 

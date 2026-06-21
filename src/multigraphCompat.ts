@@ -5,7 +5,17 @@ import * as path from "path";
 import { createRequire } from "module";
 import Graph, { DirectedGraph, UndirectedGraph } from "graphology";
 
-const _require = createRequire(import.meta.url);
+// createRequire(import.meta.url) fails under the CJS bundle (import.meta.url
+// is empty), so fall back to the native require available in CommonJS.
+const _require: NodeRequire = (() => {
+  try {
+    return createRequire(import.meta.url);
+  } catch {
+    return (typeof require !== "undefined"
+      ? require
+      : (createRequire as any)) as NodeRequire;
+  }
+})();
 
 export interface CapabilityCheck {
   name: string;

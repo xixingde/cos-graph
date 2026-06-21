@@ -2,7 +2,20 @@ import { Language } from "web-tree-sitter";
 import { resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const __dirname = fileURLToPath(new URL(".", import.meta.url));
+// Resolve the directory of this module in a way that works under both ESM
+// (import.meta.url is a valid file:// URL) and CommonJS (import.meta.url is
+// unavailable, but tsup injects the native __dirname). Falling back avoids a
+// top-level "Invalid URL" crash when the CJS bundle is require()'d.
+const _moduleDir: string = (() => {
+  try {
+    return fileURLToPath(new URL(".", import.meta.url));
+  } catch {
+    // CommonJS bundle: import.meta.url is empty/undefined, fall back to the
+    // native __dirname that tsup injects, or process.cwd() as last resort.
+    const native = (globalThis as any).__dirname;
+    return typeof native === "string" ? native : process.cwd();
+  }
+})();
 
 const GRAMMAR_WASM_MAP: Readonly<Record<string, string>> = {
   python: "tree-sitter-python.wasm",
@@ -32,7 +45,7 @@ const GRAMMAR_WASM_MAP: Readonly<Record<string, string>> = {
 const cachedLanguages = new Map<string, Language>();
 
 function resolveWasmPath(wasmFile: string): string {
-  const grammarsDir = resolvePath(__dirname, "..", "grammars");
+  const grammarsDir = resolvePath(_moduleDir, "..", "grammars");
   return resolvePath(grammarsDir, wasmFile);
 }
 
