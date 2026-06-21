@@ -15,8 +15,9 @@ export function createGraph(directed?: boolean): Graph {
   return new Graph({ type: "undirected" });
 }
 
-export function graphFromJSON(data: GraphJSON): Graph {
-  const hasDirectedEdge = data.edges.some(
+export function graphFromJSON(data: GraphJSON & { links?: EdgeAttributes[] }): Graph {
+  const edges = data.edges ?? data.links ?? [];
+  const hasDirectedEdge = edges.some(
     (e) => e.relation === "DEPENDS_ON" || e.relation === "CALLS"
   );
   const graph = createGraph(hasDirectedEdge);
@@ -26,7 +27,7 @@ export function graphFromJSON(data: GraphJSON): Graph {
     graph.addNode(id, attrs);
   }
 
-  for (const edge of data.edges) {
+  for (const edge of edges) {
     const { source, target, ...attrs } = edge;
     if (graph.hasNode(source) && graph.hasNode(target)) {
       graph.addEdge(source, target, attrs);

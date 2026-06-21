@@ -1,6 +1,6 @@
 # graphify reference: query, path, explain
 
-Load this when the user asks a question against an existing graph, or runs `/graphify path` or `/graphify explain`. The core's query stub points here for the full traversal flow. These flows use the `graphify query` CLI when it is available and fall back to an inline NetworkX traversal otherwise.
+Load this when the user asks a question against an existing graph, or runs `/graphify path` or `/graphify explain`. The core's query stub points here for the full traversal flow. These flows use the `graphify query` CLI when it is available and fall back to an inline graphology traversal otherwise.
 
 Two traversal modes - choose based on the question:
 
@@ -11,11 +11,12 @@ Two traversal modes - choose based on the question:
 
 First check the graph exists:
 ```bash
-$(cat graphify-out/.graphify_python) -c "
-from pathlib import Path
-if not Path('graphify-out/graph.json').exists():
-    print('ERROR: No graph found. Run /graphify <path> first to build the graph.')
-    raise SystemExit(1)
+$(cat .graphify/.graphify_node) -e "
+const fs = require('fs');
+if (!fs.existsSync('graphify-out/graph.json')) {
+  console.log('ERROR: No graph found. Run /graphify <path> first to build the graph.');
+  process.exit(1);
+}
 "
 ```
 If it fails, stop and tell the user to run `/graphify <path>` first.
@@ -28,20 +29,22 @@ Fix this **without inventing tokens** by expanding the query against the actual 
 
 1. Extract the token vocabulary from node labels:
 ```bash
-$(cat graphify-out/.graphify_python) -c "
-import json, re
-from pathlib import Path
-data = json.loads(Path('graphify-out/graph.json').read_text())
-vocab = set()
-for n in data['nodes']:
-    for c in re.findall(r'[^\W\d_]+', n.get('label','') or '', re.UNICODE):
-        parts = re.findall(r'[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+', c) or [c]
-        for p in parts:
-            t = p.lower()
-            if 3 <= len(t) <= 30:
-                vocab.add(t)
-Path('graphify-out/.vocab.txt').write_text('\n'.join(sorted(vocab)))
-print(f'vocab: {len(vocab)} tokens')
+$(cat .graphify/.graphify_node) -e "
+const fs = require('fs');
+const data = JSON.parse(fs.readFileSync('graphify-out/graph.json', 'utf-8'));
+const vocab = new Set();
+for (const n of data.nodes) {
+  const words = (n.label || '').match(/[A-Za-z]+/g) || [];
+  for (const w of words) {
+    const parts = w.match(/[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+/g) || [w];
+    for (const p of parts) {
+      const t = p.toLowerCase();
+      if (t.length >= 3 && t.length <= 30) vocab.add(t);
+    }
+  }
+}
+fs.writeFileSync('graphify-out/.vocab.txt', [...vocab].sort().join('\n'));
+console.log('vocab: ' + vocab.size + ' tokens');
 "
 ```
 
@@ -77,89 +80,118 @@ If the CLI is unavailable, load `graphify-out/graph.json` and run the traversal 
 5. If the graph lacks enough information, say so - do not hallucinate edges.
 
 ```bash
-$(cat graphify-out/.graphify_python) -c "
-import sys, json
-from networkx.readwrite import json_graph
-import networkx as nx
-from pathlib import Path
+$(cat .graphify/.graphify_node) --input-type=module -e "
+import fs from 'fs';
+import { GraphologyGraph } from 'graphology';
 
-data = json.loads(Path('graphify-out/graph.json').read_text())
-G = json_graph.node_link_graph(data, edges='links')
+const data = JSON.parse(fs.readFileSync('graphify-out/graph.json', 'utf-8'));
+const G = new GraphologyGraph({ type: 'undirected', multi: false });
+for (const n of data.nodes) G.addNode(n.id, n);
+for (const e of data.links) G.addEdge(e.source, e.target, e);
 
-question = 'QUESTION'
-mode = 'MODE'  # 'bfs' or 'dfs'
-terms = [t.lower() for t in question.split() if len(t) > 3]
+const question = 'QUESTION';
+const mode = 'MODE';  // 'bfs' or 'dfs'
+const terms = question.split(' ').filter(t => t.length > 3).map(t => t.toLowerCase());
 
-# Find best-matching start nodes
-scored = []
-for nid, ndata in G.nodes(data=True):
-    label = ndata.get('label', '').lower()
-    score = sum(1 for t in terms if t in label)
-    if score > 0:
-        scored.append((score, nid))
-scored.sort(reverse=True)
-start_nodes = [nid for _, nid in scored[:3]]
+// Preferred node types for high-level overview queries
+const PREFERRED_TYPES = new Set(['concept', 'rationale', 'document', 'summary']);
 
-if not start_nodes:
-    print('No matching nodes found for query terms:', terms)
-    sys.exit(0)
+// Find best-matching start nodes, preferring concept/rationale/document types
+const scored = [];
+G.forEachNode((nid, ndata) => {
+  const label = (ndata.label || '').toLowerCase();
+  const ftype = (ndata.file_type || '').toLowerCase();
+  let score = 0;
+  for (const t of terms) { if (label.includes(t)) score++; }
+  if (score > 0) {
+    // Boost preferred node types so they rank above code nodes
+    const typeBonus = PREFERRED_TYPES.has(ftype) ? 2 : 0;
+    scored.push({ score: score + typeBonus, nid });
+  }
+});
+scored.sort((a, b) => b.score - a.score);
+const startNodes = scored.slice(0, 3).map(s => s.nid);
 
-subgraph_nodes = set()
-subgraph_edges = []
+if (startNodes.length === 0) {
+  console.log('No matching nodes found for query terms:', terms);
+  process.exit(0);
+}
 
-if mode == 'dfs':
-    # DFS: follow one path as deep as possible before backtracking.
-    # Depth-limited to 6 to avoid traversing the whole graph.
-    visited = set()
-    stack = [(n, 0) for n in reversed(start_nodes)]
-    while stack:
-        node, depth = stack.pop()
-        if node in visited or depth > 6:
-            continue
-        visited.add(node)
-        subgraph_nodes.add(node)
-        for neighbor in G.neighbors(node):
-            if neighbor not in visited:
-                stack.append((neighbor, depth + 1))
-                subgraph_edges.append((node, neighbor))
-else:
-    # BFS: explore all neighbors layer by layer up to depth 3.
-    frontier = set(start_nodes)
-    subgraph_nodes = set(start_nodes)
-    for _ in range(3):
-        next_frontier = set()
-        for n in frontier:
-            for neighbor in G.neighbors(n):
-                if neighbor not in subgraph_nodes:
-                    next_frontier.add(neighbor)
-                    subgraph_edges.append((n, neighbor))
-        subgraph_nodes.update(next_frontier)
-        frontier = next_frontier
+const subgraphNodes = new Set();
+const subgraphEdges = [];
 
-# Token-budget aware output: rank by relevance, cut at budget (~4 chars/token)
-token_budget = BUDGET  # default 2000
-char_budget = token_budget * 4
+if (mode === 'dfs') {
+  // DFS: follow one path as deep as possible before backtracking.
+  // Depth-limited to 6 to avoid traversing the whole graph.
+  const visited = new Set();
+  const stack = startNodes.reverse().map(n => [n, 0]);
+  while (stack.length > 0) {
+    const [node, depth] = stack.pop();
+    if (visited.has(node) || depth > 6) continue;
+    visited.add(node);
+    subgraphNodes.add(node);
+    G.forEachNeighbor(node, (neighbor) => {
+      if (!visited.has(neighbor)) {
+        stack.push([neighbor, depth + 1]);
+        subgraphEdges.push([node, neighbor]);
+      }
+    });
+  }
+} else {
+  // BFS: explore all neighbors layer by layer.
+  // Default depth 2 (not 3) to avoid returning the entire graph on
+  // broad overview queries. Override by passing --budget N (>=4000)
+  // which signals a deeper need and switches to depth 3.
+  const MAX_BFS_DEPTH = BUDGET >= 4000 ? 3 : 2;  // default 2000
+  const MAX_FRONTIER = 80;  // cap per layer to limit explosion
+  let frontier = new Set(startNodes);
+  for (const sn of startNodes) subgraphNodes.add(sn);
+  for (let i = 0; i < MAX_BFS_DEPTH; i++) {
+    const nextFrontier = new Set();
+    for (const n of frontier) {
+      G.forEachNeighbor(n, (neighbor) => {
+        if (!subgraphNodes.has(neighbor) && nextFrontier.size < MAX_FRONTIER) {
+          nextFrontier.add(neighbor);
+          subgraphEdges.push([n, neighbor]);
+        }
+      });
+    }
+    for (const nn of nextFrontier) subgraphNodes.add(nn);
+    frontier = nextFrontier;
+  }
+}
 
-# Score each node by term overlap for ranked output
-def relevance(nid):
-    label = G.nodes[nid].get('label', '').lower()
-    return sum(1 for t in terms if t in label)
+// Token-budget aware output: rank by relevance, cut at budget (~4 chars/token)
+const tokenBudget = BUDGET;  // default 2000
+const charBudget = tokenBudget * 4;
 
-ranked_nodes = sorted(subgraph_nodes, key=relevance, reverse=True)
+// Score each node by term overlap for ranked output
+function relevance(nid) {
+  const label = (G.getNodeAttributes(nid).label || '').toLowerCase();
+  let s = 0;
+  for (const t of terms) { if (label.includes(t)) s++; }
+  return s;
+}
 
-lines = [f'Traversal: {mode.upper()} | Start: {[G.nodes[n].get(\"label\",n) for n in start_nodes]} | {len(subgraph_nodes)} nodes']
-for nid in ranked_nodes:
-    d = G.nodes[nid]
-    lines.append(f'  NODE {d.get(\"label\", nid)} [src={d.get(\"source_file\",\"\")} loc={d.get(\"source_location\",\"\")}]')
-for u, v in subgraph_edges:
-    if u in subgraph_nodes and v in subgraph_nodes:
-        _raw = G[u][v]; d = next(iter(_raw.values()), {}) if isinstance(G, nx.MultiGraph) else _raw
-        lines.append(f'  EDGE {G.nodes[u].get(\"label\",u)} --{d.get(\"relation\",\"\")} [{d.get(\"confidence\",\"\")}]--> {G.nodes[v].get(\"label\",v)}')
+const rankedNodes = [...subgraphNodes].sort((a, b) => relevance(b) - relevance(a));
 
-output = '\n'.join(lines)
-if len(output) > char_budget:
-    output = output[:char_budget] + f'\n... (truncated at ~{token_budget} token budget - use --budget N for more)'
-print(output)
+const lines = ['Traversal: ' + mode.toUpperCase() + ' | Start: ' + startNodes.map(n => G.getNodeAttributes(n).label || n).join(', ') + ' | ' + subgraphNodes.size + ' nodes'];
+for (const nid of rankedNodes) {
+  const d = G.getNodeAttributes(nid);
+  lines.push('  NODE ' + (d.label || nid) + ' [src=' + (d.source_file || '') + ' loc=' + (d.source_location || '') + ']');
+}
+for (const [u, v] of subgraphEdges) {
+  if (subgraphNodes.has(u) && subgraphNodes.has(v)) {
+    const edge = G.getEdgeAttributes(G.edge(u, v)) || {};
+    lines.push('  EDGE ' + (G.getNodeAttributes(u).label || u) + ' --' + (edge.relation || '') + ' [' + (edge.confidence || '') + ']--> ' + (G.getNodeAttributes(v).label || v));
+  }
+}
+
+let output = lines.join('\n');
+if (output.length > charBudget) {
+  output = output.slice(0, charBudget) + '\n... (truncated at ~' + tokenBudget + ' token budget - use --budget N for more)';
+}
+console.log(output);
 "
 ```
 
@@ -168,8 +200,26 @@ Replace `QUESTION` with the **expanded** query string, `MODE` with `bfs` or `dfs
 After writing the answer, save it back into the graph so it improves future queries. Include the expanded tokens inside the `--answer` text (e.g. `"Expanded from original query via vocab: [tokens]. Then traversed..."`) so the next `--update` extracts the expansion history as a graph node:
 
 ```bash
-$(cat graphify-out/.graphify_python) -m graphify save-result --question "ORIGINAL_QUESTION" --answer "ANSWER" --type query --nodes NODE1 NODE2
+graphify save-result --question "ORIGINAL_QUESTION" --answer "ANSWER" --type query --memory-dir graphify-out/memory --nodes NODE1 NODE2
 ```
+
+If the `graphify` CLI is unavailable, use the Node.js API directly with the local CJS bundle. **Do NOT use `require('@sentropic/graphify')`** — that package name is only valid after a global `npm install -g @sentropic/graphify`. In a local repo, use the CJS bundle:
+
+```bash
+$(cat .graphify/.graphify_node) -e "
+const { saveQueryResult } = require('./dist/index.cjs');
+const out = saveQueryResult(
+  'ORIGINAL_QUESTION',
+  'ANSWER',
+  'graphify-out/memory',
+  'query',
+  ['NODE1', 'NODE2']
+);
+console.log('Saved to ' + out);
+"
+```
+
+**Important:** `saveQueryResult` uses positional arguments `(question, answer, memoryDir, queryType, sourceNodes)`, not a single object. Passing an object as the first argument causes `memoryDir` to be `undefined`, which crashes `fs.mkdirSync`.
 
 Replace `ORIGINAL_QUESTION` with the user's verbatim question, `ANSWER` with your full answer text (containing the expanded-token trace), `NODE1 NODE2` with the list of node labels you cited. This closes the feedback loop: the next `--update` will extract this Q&A as a node in the graph.
 
@@ -186,50 +236,61 @@ graphify path "NODE_A" "NODE_B"
 If the CLI is unavailable, run it inline:
 
 ```bash
-$(cat graphify-out/.graphify_python) -c "
-import json, sys
-import networkx as nx
-from networkx.readwrite import json_graph
-from pathlib import Path
+$(cat .graphify/.graphify_node) --input-type=module -e "
+import fs from 'fs';
+import { GraphologyGraph } from 'graphology';
 
-data = json.loads(Path('graphify-out/graph.json').read_text())
-G = json_graph.node_link_graph(data, edges='links')
+const data = JSON.parse(fs.readFileSync('graphify-out/graph.json', 'utf-8'));
+const G = new GraphologyGraph({ type: 'undirected', multi: false });
+for (const n of data.nodes) G.addNode(n.id, n);
+for (const e of data.links) G.addEdge(e.source, e.target, e);
 
-a_term = 'NODE_A'
-b_term = 'NODE_B'
+const aTerm = 'NODE_A';
+const bTerm = 'NODE_B';
 
-def find_node(term):
-    term = term.lower()
-    scored = sorted(
-        [(sum(1 for w in term.split() if w in G.nodes[n].get('label','').lower()), n)
-         for n in G.nodes()],
-        reverse=True
-    )
-    return scored[0][1] if scored and scored[0][0] > 0 else None
+function findNode(term) {
+  const tl = term.toLowerCase();
+  const words = tl.split(' ');
+  let best = null;
+  let bestScore = 0;
+  G.forEachNode((nid, ndata) => {
+    const label = (ndata.label || '').toLowerCase();
+    let score = 0;
+    for (const w of words) { if (label.includes(w)) score++; }
+    if (score > bestScore) { bestScore = score; best = nid; }
+  });
+  return bestScore > 0 ? best : null;
+}
 
-src = find_node(a_term)
-tgt = find_node(b_term)
+const src = findNode(aTerm);
+const tgt = findNode(bTerm);
 
-if not src or not tgt:
-    print(f'Could not find nodes matching: {a_term!r} or {b_term!r}')
-    sys.exit(0)
+if (!src || !tgt) {
+  console.log('Could not find nodes matching: ' + aTerm + ' or ' + bTerm);
+  process.exit(0);
+}
 
-try:
-    path = nx.shortest_path(G, src, tgt)
-    print(f'Shortest path ({len(path)-1} hops):')
-    for i, nid in enumerate(path):
-        label = G.nodes[nid].get('label', nid)
-        if i < len(path) - 1:
-            _raw = G[nid][path[i+1]]; edge = next(iter(_raw.values()), {}) if isinstance(G, nx.MultiGraph) else _raw
-            rel = edge.get('relation', '')
-            conf = edge.get('confidence', '')
-            print(f'  {label} --{rel}--> [{conf}]')
-        else:
-            print(f'  {label}')
-except nx.NetworkXNoPath:
-    print(f'No path found between {a_term!r} and {b_term!r}')
-except nx.NodeNotFound as e:
-    print(f'Node not found: {e}')
+try {
+  const path = G.bidirectional(src, tgt);
+  console.log('Shortest path (' + (path.length - 1) + ' hops):');
+  for (let i = 0; i < path.length; i++) {
+    const label = G.getNodeAttributes(path[i]).label || path[i];
+    if (i < path.length - 1) {
+      const edge = G.getEdgeAttributes(G.edge(path[i], path[i + 1])) || {};
+      const rel = edge.relation || '';
+      const conf = edge.confidence || '';
+      console.log('  ' + label + ' --' + rel + '--> [' + conf + ']');
+    } else {
+      console.log('  ' + label);
+    }
+  }
+} catch (e) {
+  if (e.message && e.message.includes('not found')) {
+    console.log('No path found between ' + aTerm + ' and ' + bTerm);
+  } else {
+    throw e;
+  }
+}
 "
 ```
 
@@ -238,7 +299,23 @@ Replace `NODE_A` and `NODE_B` with the actual concept names from the user. Then 
 After writing the explanation, save it back:
 
 ```bash
-$(cat graphify-out/.graphify_python) -m graphify save-result --question "Path from NODE_A to NODE_B" --answer "ANSWER" --type path_query --nodes NODE_A NODE_B
+graphify save-result --question "Path from NODE_A to NODE_B" --answer "ANSWER" --type path_query --memory-dir graphify-out/memory --nodes NODE_A NODE_B
+```
+
+Node.js fallback (local repo only — use `require('./dist/index.cjs')`, not `require('@sentropic/graphify')`; positional args, not object):
+
+```bash
+$(cat .graphify/.graphify_node) -e "
+const { saveQueryResult } = require('./dist/index.cjs');
+const out = saveQueryResult(
+  'Path from NODE_A to NODE_B',
+  'ANSWER',
+  'graphify-out/memory',
+  'path_query',
+  ['NODE_A', 'NODE_B']
+);
+console.log('Saved to ' + out);
+"
 ```
 
 ---
@@ -254,43 +331,49 @@ graphify explain "NODE_NAME"
 If the CLI is unavailable, run it inline:
 
 ```bash
-$(cat graphify-out/.graphify_python) -c "
-import json, sys
-import networkx as nx
-from networkx.readwrite import json_graph
-from pathlib import Path
+$(cat .graphify/.graphify_node) --input-type=module -e "
+import fs from 'fs';
+import { GraphologyGraph } from 'graphology';
 
-data = json.loads(Path('graphify-out/graph.json').read_text())
-G = json_graph.node_link_graph(data, edges='links')
+const data = JSON.parse(fs.readFileSync('graphify-out/graph.json', 'utf-8'));
+const G = new GraphologyGraph({ type: 'undirected', multi: false });
+for (const n of data.nodes) G.addNode(n.id, n);
+for (const e of data.links) G.addEdge(e.source, e.target, e);
 
-term = 'NODE_NAME'
-term_lower = term.lower()
+const term = 'NODE_NAME';
+const termLower = term.toLowerCase();
 
-# Find best matching node
-scored = sorted(
-    [(sum(1 for w in term_lower.split() if w in G.nodes[n].get('label','').lower()), n)
-     for n in G.nodes()],
-    reverse=True
-)
-if not scored or scored[0][0] == 0:
-    print(f'No node matching {term!r}')
-    sys.exit(0)
+// Find best matching node
+let bestNid = null;
+let bestScore = 0;
+const words = termLower.split(' ');
+G.forEachNode((nid, ndata) => {
+  const label = (ndata.label || '').toLowerCase();
+  let score = 0;
+  for (const w of words) { if (label.includes(w)) score++; }
+  if (score > bestScore) { bestScore = score; bestNid = nid; }
+});
 
-nid = scored[0][1]
-data_n = G.nodes[nid]
-print(f'NODE: {data_n.get(\"label\", nid)}')
-print(f'  source: {data_n.get(\"source_file\",\"unknown\")}')
-print(f'  type: {data_n.get(\"file_type\",\"unknown\")}')
-print(f'  degree: {G.degree(nid)}')
-print()
-print('CONNECTIONS:')
-for neighbor in G.neighbors(nid):
-    _raw = G[nid][neighbor]; edge = next(iter(_raw.values()), {}) if isinstance(G, nx.MultiGraph) else _raw
-    nlabel = G.nodes[neighbor].get('label', neighbor)
-    rel = edge.get('relation', '')
-    conf = edge.get('confidence', '')
-    src_file = G.nodes[neighbor].get('source_file', '')
-    print(f'  --{rel}--> {nlabel} [{conf}] ({src_file})')
+if (bestScore === 0) {
+  console.log('No node matching ' + term);
+  process.exit(0);
+}
+
+const d = G.getNodeAttributes(bestNid);
+console.log('NODE: ' + (d.label || bestNid));
+console.log('  source: ' + (d.source_file || 'unknown'));
+console.log('  type: ' + (d.file_type || 'unknown'));
+console.log('  degree: ' + G.degree(bestNid));
+console.log();
+console.log('CONNECTIONS:');
+G.forEachNeighbor(bestNid, (neighbor) => {
+  const edge = G.getEdgeAttributes(G.edge(bestNid, neighbor)) || {};
+  const nlabel = G.getNodeAttributes(neighbor).label || neighbor;
+  const rel = edge.relation || '';
+  const conf = edge.confidence || '';
+  const srcFile = G.getNodeAttributes(neighbor).source_file || '';
+  console.log('  --' + rel + '--> ' + nlabel + ' [' + conf + '] (' + srcFile + ')');
+});
 "
 ```
 
@@ -299,5 +382,21 @@ Replace `NODE_NAME` with the concept the user asked about. Then write a 3-5 sent
 After writing the explanation, save it back:
 
 ```bash
-$(cat graphify-out/.graphify_python) -m graphify save-result --question "Explain NODE_NAME" --answer "ANSWER" --type explain --nodes NODE_NAME
+graphify save-result --question "Explain NODE_NAME" --answer "ANSWER" --type explain --memory-dir graphify-out/memory --nodes NODE_NAME
+```
+
+Node.js fallback (local repo only — use `require('./dist/index.cjs')`, not `require('@sentropic/graphify')`; positional args, not object):
+
+```bash
+$(cat .graphify/.graphify_node) -e "
+const { saveQueryResult } = require('./dist/index.cjs');
+const out = saveQueryResult(
+  'Explain NODE_NAME',
+  'ANSWER',
+  'graphify-out/memory',
+  'explain',
+  ['NODE_NAME']
+);
+console.log('Saved to ' + out);
+"
 ```

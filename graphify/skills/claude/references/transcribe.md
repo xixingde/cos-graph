@@ -25,17 +25,17 @@ Set it as `WHISPER_PROMPT` to use in the next command.
 
 ```bash
 GRAPHIFY_WHISPER_MODEL=base  # or whatever --whisper-model the user passed
-$(cat graphify-out/.graphify_python) -c "
-import json, os
-from pathlib import Path
-from graphify.transcribe import transcribe_all
+$(cat .graphify/.graphify_node) -e "
+const fs = require('fs');
+const path = require('path');
+const { transcribeAll } = require('./dist/index.cjs');
 
-detect = json.loads(Path('graphify-out/.graphify_detect.json').read_text(encoding=\"utf-8\"))
-video_files = detect.get('files', {}).get('video', [])
-prompt = os.environ.get('GRAPHIFY_WHISPER_PROMPT', 'Use proper punctuation and paragraph breaks.')
+const detect = JSON.parse(fs.readFileSync('graphify-out/.graphify_detect.json', 'utf-8'));
+const videoFiles = (detect.files && detect.files.video) || [];
+const prompt = process.env.GRAPHIFY_WHISPER_PROMPT || 'Use proper punctuation and paragraph breaks.';
 
-transcript_paths = transcribe_all(video_files, initial_prompt=prompt)
-print(json.dumps(transcript_paths, ensure_ascii=False))
+const transcriptPaths = transcribeAll(videoFiles, { initialPrompt: prompt });
+console.log(JSON.stringify(transcriptPaths));
 " > graphify-out/.graphify_transcripts.json
 ```
 

@@ -7,20 +7,15 @@ Load this when the user ran `/graphify add <url>` or passed `--watch`. Neither i
 Fetch a URL and add it to the corpus, then update the graph.
 
 ```bash
-$(cat graphify-out/.graphify_python) -c "
-import sys
-from graphify.ingest import ingest
-from pathlib import Path
-
-try:
-    out = ingest('URL', Path('./raw'), author='AUTHOR', contributor='CONTRIBUTOR')
-    print(f'Saved to {out}')
-except ValueError as e:
-    print(f'error: {e}', file=sys.stderr)
-    sys.exit(1)
-except RuntimeError as e:
-    print(f'error: {e}', file=sys.stderr)
-    sys.exit(1)
+$(cat .graphify/.graphify_node) -e "
+const { ingest } = require('./dist/index.cjs');
+try {
+  const out = ingest('URL', './raw', { author: 'AUTHOR', contributor: 'CONTRIBUTOR' });
+  console.log('Saved to ' + out);
+} catch (e) {
+  console.error('error: ' + e.message);
+  process.exit(1);
+}
 "
 ```
 
@@ -41,7 +36,10 @@ Supported URL types (auto-detected):
 Start a background watcher that monitors a folder and auto-updates the graph when files change.
 
 ```bash
-python3 -m graphify.watch INPUT_PATH --debounce 3
+$(cat .graphify/.graphify_node) -e "
+const { startWatch } = require('./dist/index.cjs');
+startWatch('INPUT_PATH', { debounce: 3 });
+"
 ```
 
 Replace INPUT_PATH with the folder to watch. Behavior depends on what changed:
