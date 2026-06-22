@@ -15,16 +15,16 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact: graphify-linux
-            binary: graphify
+            binary: graphify_cli
+            artifact-binary: graphify
           - os: macos-latest
-            artifact: graphify-macos-arm64
-            binary: graphify-arm64
-          - os: macos-13
-            artifact: graphify-macos-x86_64
-            binary: graphify-x86_64
+            artifact: graphify-macos
+            binary: graphify_cli
+            artifact-binary: graphify
           - os: windows-latest
             artifact: graphify-windows
             binary: graphify.exe
+            artifact-binary: graphify.exe
 
     steps:
       - uses: actions/checkout@v6
@@ -43,6 +43,7 @@ jobs:
           uv run python -m nuitka \
             --standalone \
             --onefile \
+            --assume-yes-for-downloads \
             --include-data-dir="graphify/always_on=graphify/always_on" \
             --include-data-dir="graphify/skills=graphify/skills" \
             --include-data-files="graphify/skill*.md=graphify/" \
@@ -50,10 +51,15 @@ jobs:
             --python-flag=-m \
             graphify/
 
+      - name: Rename binary (Linux/macOS only)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: mv dist/graphify_cli dist/graphify
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: dist/${{ matrix.binary }}
+          path: dist/${{ matrix.artifact-binary }}
 
   release:
     name: Upload to GitHub Release
