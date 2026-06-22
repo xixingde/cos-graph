@@ -153,12 +153,12 @@ def test_query_heading_is_homed_in_core_stub_only():
     core, refs = _claude_artifacts()
     core_headings = set(gen.headings(core))
     query_headings = set(gen.headings(refs["query.md"]))
-    assert "## For /graphify query" in core_headings
-    assert "## For /graphify query" not in query_headings
+    assert "## For /kb-graph query" in core_headings
+    assert "## For /kb-graph query" not in query_headings
     # The deeper query content moved into the reference.
-    assert "## For /graphify path" in query_headings
-    assert "## For /graphify explain" in query_headings
-    assert "## For /graphify path" not in core_headings
+    assert "## For /kb-graph path" in query_headings
+    assert "## For /kb-graph explain" in query_headings
+    assert "## For /kb-graph path" not in core_headings
 
 
 def test_eight_references_render_for_claude():
@@ -318,8 +318,8 @@ def test_every_platform_query_has_expansion_and_fallback():
         q = refs["query.md"]
         assert "Constrained query expansion" in q
         assert "If the CLI is unavailable" in q
-        assert "## For /graphify path" in q
-        assert "## For /graphify explain" in q
+        assert "## For /kb-graph path" in q
+        assert "## For /kb-graph explain" in q
 
 
 def test_schema_singleton_passes_across_all_platforms():
@@ -464,7 +464,7 @@ def test_monoliths_change_only_the_enum_description_and_chunk_cleanup():
         # Strip trigger: lines from the reference — their removal (#1180) is a
         # permitted diff alongside enum, description, and chunk-cleanup changes.
         original = [
-            l for l in gen._normalise(gen._git_show(platforms[key].roundtrip_ref)).splitlines()
+            l for l in gen._normalise(gen._rename_user_slash_command(gen._git_show(platforms[key].roundtrip_ref))).splitlines()
             if not gen._is_trigger_line(l)
         ]
         assert len(rendered) == len(original), f"[{key}] line count changed"
@@ -713,7 +713,7 @@ def test_trae_hooks_reference_includes_the_pretooluse_note():
     _, refs = _platform_artifacts("trae")
     hooks = refs["hooks.md"]
     assert "Unlike Claude Code, Trae does NOT support PreToolUse hooks" in hooks
-    assert "Run `/graphify --update` manually after code changes" in hooks
+    assert "Run `/kb-graph --update` manually after code changes" in hooks
 
 
 def test_claude_flavored_hosts_keep_their_hooks_text_unchanged():

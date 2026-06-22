@@ -410,8 +410,8 @@ def _skill_registration(skill_path: str = "~/.claude/skills/graphify/SKILL.md") 
     return (
         "\n# graphify\n"
         f"- **graphify** (`{skill_path}`) "
-        "- any input to knowledge graph. Trigger: `/graphify`\n"
-        "When the user types `/graphify`, invoke the Skill tool "
+        "- any input to knowledge graph. Trigger: `/kb-graph`\n"
+        "When the user types `/kb-graph`, invoke the Skill tool "
         "with `skill: \"graphify\"` before doing anything else.\n"
     )
 
@@ -648,7 +648,7 @@ def install(platform: str = "claude", *, project: bool = False, project_dir: Pat
     skill_dst = _copy_skill_file(platform, project=project, project_dir=project_dir)
 
     if platform == "kilo":
-        # Kilo Code also supports a native /graphify command file.
+        # Kilo Code also supports a native /kb-graph command file.
         command_src = Path(__file__).parent / "command-kilo.md"
         if not command_src.exists():
             print(
@@ -656,7 +656,7 @@ def install(platform: str = "claude", *, project: bool = False, project_dir: Pat
                 file=sys.stderr,
             )
             sys.exit(1)
-        command_dst = Path.home() / ".config" / "kilo" / "command" / "graphify.md"
+        command_dst = Path.home() / ".config" / "kilo" / "command" / "kb-graph.md"
         command_dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(command_src, command_dst)
         print(f"  command installed ->  {command_dst}")
@@ -706,7 +706,7 @@ def install(platform: str = "claude", *, project: bool = False, project_dir: Pat
     print()
     print("Done. Open your AI coding assistant and type:")
     print()
-    print("  /graphify .")
+    print("  /kb-graph .")
     print()
 
 
@@ -897,7 +897,7 @@ def vscode_install(project_dir: Path | None = None) -> None:
 
     print()
     print(
-        "VS Code Copilot Chat configured. Type /graphify in the chat panel to build the graph."
+        "VS Code Copilot Chat configured. Type /kb-graph in the chat panel to build the graph."
     )
     print("Note: for GitHub Copilot CLI (terminal), use: graphify copilot install")
 
@@ -988,7 +988,7 @@ def _kiro_install(project_dir: Path) -> None:
 
     print()
     print("Kiro will now read the knowledge graph before every conversation.")
-    print("Use /graphify to build or update the graph.")
+    print("Use /kb-graph to build or update the graph.")
 
 
 def _kiro_uninstall(project_dir: Path) -> None:
@@ -1063,7 +1063,7 @@ def _antigravity_install(project_dir: Path) -> None:
 
     print()
     print("Antigravity will now check the knowledge graph before answering")
-    print("codebase questions. Run /graphify first to build the graph.")
+    print("codebase questions. Run /kb-graph first to build the graph.")
     print()
     print(
         "To enable full MCP architecture navigation, add this to ~/.gemini/antigravity/mcp_config.json:"
@@ -1154,7 +1154,7 @@ def _cursor_install(project_dir: Path) -> None:
     print(f"graphify rule {action} at {rule_path.resolve()}")
     print()
     print("Cursor will now always include the knowledge graph context.")
-    print("Run /graphify . first to build the graph if you haven't already.")
+    print("Run /kb-graph . first to build the graph if you haven't already.")
 
 
 def _cursor_uninstall(project_dir: Path) -> None:
@@ -1740,7 +1740,7 @@ def _agents_uninstall(project_dir: Path, platform: str = "") -> None:
 
 def _kilo_uninstall_global() -> list[str]:
     removed = []
-    command_dst = Path.home() / ".config" / "kilo" / "command" / "graphify.md"
+    command_dst = Path.home() / ".config" / "kilo" / "command" / "kb-graph.md"
     if command_dst.exists():
         command_dst.unlink()
         removed.append(f"command removed: {command_dst}")
@@ -2131,7 +2131,7 @@ def main() -> None:
         print("                            (default follows JSON directed flag;")
         print("                             raw extraction with no flag defaults directed)")
         print("    --extract-path PATH     extractor source for suppression scan")
-        print("  clone <github-url>      clone a GitHub repo locally and print its path for /graphify")
+        print("  clone <github-url>      clone a GitHub repo locally and print its path for /kb-graph")
         print("  merge-driver <base> <current> <other>  git merge driver: union-merge two graph.json files (set up via hook install)")
         print("  merge-graphs <g1> <g2>  merge two or more graph.json files into one cross-repo graph")
         print("    --out <path>            output path (default: graphify-out/merged-graph.json)")
@@ -3120,7 +3120,7 @@ def main() -> None:
         try:
             saved = _ingest(url, target_dir, author=author, contributor=contributor)
             print(f"Saved to {saved}")
-            print("Run /graphify --update in your AI assistant to update the graph.")
+            print("Run /kb-graph --update in your AI assistant to update the graph.")
         except Exception as exc:
             print(f"error: {exc}", file=sys.stderr)
             sys.exit(1)
@@ -3191,7 +3191,7 @@ def main() -> None:
         graph_json = graph_override if graph_override is not None else watch_path / "graphify-out" / "graph.json"
         if not graph_json.exists():
             print(
-                f"error: no graph found at {graph_json} — run /graphify first",
+                f"error: no graph found at {graph_json} — run /kb-graph first",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -3346,7 +3346,7 @@ def main() -> None:
         # exiting silently when a hook-driven rebuild happens to be running.
         ok = _rebuild_code(watch_path, force=force, no_cluster=no_cluster, block_on_lock=True)
         if ok:
-            print("Code graph updated. For doc/paper/image changes run /graphify --update in your AI assistant.")
+            print("Code graph updated. For doc/paper/image changes run /kb-graph --update in your AI assistant.")
             if not (
                 os.environ.get("GEMINI_API_KEY")
                 or os.environ.get("GOOGLE_API_KEY")
@@ -3689,7 +3689,7 @@ def main() -> None:
         report_path = report_path.expanduser()
 
         if not graph_path.exists():
-            print(f"error: graph not found: {graph_path}. Run /graphify <path> first.", file=sys.stderr)
+            print(f"error: graph not found: {graph_path}. Run /kb-graph <path> first.", file=sys.stderr)
             sys.exit(1)
 
         if subcmd == "callflow-html":

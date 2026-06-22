@@ -13,14 +13,14 @@
   <a href="https://github.com/sponsors/safishamsi"><img src="https://img.shields.io/badge/sponsor-safishamsi-ea4aaa?logo=github-sponsors" alt="Sponsor"/></a>
 </p>
 
-**O abilitate pentru asistenții de cod AI.** Tastați `/graphify` în Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro sau Google Antigravity — citește fișierele dvs., construiește un graf de cunoștințe și vă returnează structura pe care nu știați că există. Înțelegeți mai rapid o bază de cod. Găsiți „de ce"-ul din spatele deciziilor arhitecturale.
+**O abilitate pentru asistenții de cod AI.** Tastați `/kb-graph` în Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro sau Google Antigravity — citește fișierele dvs., construiește un graf de cunoștințe și vă returnează structura pe care nu știați că există. Înțelegeți mai rapid o bază de cod. Găsiți „de ce"-ul din spatele deciziilor arhitecturale.
 
 Complet multimodal. Adăugați cod, PDF-uri, markdown, capturi de ecran, diagrame, fotografii cu tablă albă, imagini în alte limbi sau fișiere video și audio — graphify extrage concepte și relații din toate și le conectează într-un singur graf. Videoclipurile sunt transcrise local cu Whisper. Suportă 25 de limbaje de programare prin tree-sitter AST.
 
 > Andrej Karpathy menține un folder `/raw` unde depune lucrări, tweet-uri, capturi de ecran și note. graphify este răspunsul la această problemă — **71,5x** mai puțini token pe interogare față de citirea fișierelor brute, persistent între sesiuni.
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 ```
@@ -54,10 +54,10 @@ pip install graphifyy && graphify install
 ## Utilizare
 
 ```
-/graphify .
-/graphify ./raw --update
-/graphify query "ce conectează Attention cu optimizatorul?"
-/graphify path "DigestAuth" "Response"
+/kb-graph .
+/kb-graph ./raw --update
+/kb-graph query "ce conectează Attention cu optimizatorul?"
+/kb-graph path "DigestAuth" "Response"
 graphify hook install
 graphify update ./src
 ```

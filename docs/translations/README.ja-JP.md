@@ -6,14 +6,14 @@
 [![PyPI](https://img.shields.io/pypi/v/graphifyy)](https://pypi.org/project/graphifyy/)
 [![Sponsor](https://img.shields.io/badge/sponsor-safishamsi-ea4aaa?logo=github-sponsors)](https://github.com/sponsors/safishamsi)
 
-**AIコーディングアシスタント向けのスキル。** Claude Code、Codex、OpenCode、OpenClaw、Factory Droid で `/graphify` と入力するだけで、ファイルを読み込んでナレッジグラフを構築し、あなたが気づいていなかった構造を返します。コードベースをより速く理解し、アーキテクチャ上の意思決定の「なぜ」を見つけ出します。
+**AIコーディングアシスタント向けのスキル。** Claude Code、Codex、OpenCode、OpenClaw、Factory Droid で `/kb-graph` と入力するだけで、ファイルを読み込んでナレッジグラフを構築し、あなたが気づいていなかった構造を返します。コードベースをより速く理解し、アーキテクチャ上の意思決定の「なぜ」を見つけ出します。
 
 完全にマルチモーダル対応。コード、PDF、Markdown、スクリーンショット、図、ホワイトボード写真、他言語の画像まで――graphify は Claude Vision を使ってそれらすべてから概念と関係性を抽出し、1 つのグラフに接続します。tree-sitter AST により 19 言語をサポート（Python、JS、TS、Go、Rust、Java、C、C++、Ruby、C#、Kotlin、Scala、PHP、Swift、Lua、Zig、PowerShell、Elixir、Objective-C）。
 
 > Andrej Karpathy は論文、ツイート、スクリーンショット、メモを放り込む `/raw` フォルダを持っています。graphify はまさにその問題への答えです――生ファイルを読むのに比べて1クエリあたりのトークン数が 71.5 倍少なく、セッションをまたいで永続化され、見つけたものと推測したものを正直に区別します。
 
 ```
-/graphify .                        # どのフォルダでも動作 - コードベース、メモ、論文、なんでも
+/kb-graph .                        # どのフォルダでも動作 - コードベース、メモ、論文、なんでも
 ```
 
 ```
@@ -70,7 +70,7 @@ Codex ユーザーは並列抽出のために `~/.codex/config.toml` の `[featu
 次に、AI コーディングアシスタントを開いて入力します：
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 注意：Codex はスキル呼び出しに `/` ではなく `$` を使用するため、代わりに `$graphify .` と入力してください。
@@ -97,9 +97,9 @@ Codex ユーザーは並列抽出のために `~/.codex/config.toml` の `[featu
 
 常時有効のフックは `GRAPH_REPORT.md` を表面化します――これはゴッドノード、コミュニティ、意外なつながりを 1 ページにまとめた要約です。アシスタントはファイル検索の前にこれを読み、キーワードマッチではなく構造に基づいてナビゲートします。これで日常的な質問のほとんどをカバーできます。
 
-`/graphify query`、`/graphify path`、`/graphify explain` はさらに深く踏み込みます：生の `graph.json` をホップごとに辿り、ノード間の正確なパスをトレースし、エッジレベルの詳細（関係タイプ、信頼度スコア、ソース位置）を表面化します。一般的なオリエンテーションではなく、特定の質問をグラフから答えさせたいときに使います。
+`/kb-graph query`、`/kb-graph path`、`/kb-graph explain` はさらに深く踏み込みます：生の `graph.json` をホップごとに辿り、ノード間の正確なパスをトレースし、エッジレベルの詳細（関係タイプ、信頼度スコア、ソース位置）を表面化します。一般的なオリエンテーションではなく、特定の質問をグラフから答えさせたいときに使います。
 
-こう考えてください：常時有効のフックはアシスタントに地図を与え、`/graphify` コマンドはその地図を正確にナビゲートさせます。
+こう考えてください：常時有効のフックはアシスタントに地図を与え、`/kb-graph` コマンドはその地図を正確にナビゲートさせます。
 
 <details>
 <summary>手動インストール（curl）</summary>
@@ -113,8 +113,8 @@ curl -fsSL https://raw.githubusercontent.com/safishamsi/graphify/v3/graphify/ski
 `~/.claude/CLAUDE.md` に追加します：
 
 ```
-- **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
-When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` before doing anything else.
+- **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/kb-graph`
+When the user types `/kb-graph`, invoke the Skill tool with `skill: "graphify"` before doing anything else.
 ```
 
 </details>
@@ -122,33 +122,33 @@ When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` 
 ## 使い方
 
 ```
-/graphify                          # カレントディレクトリで実行
-/graphify ./raw                    # 特定のフォルダで実行
-/graphify ./raw --mode deep        # より積極的な INFERRED エッジ抽出
-/graphify ./raw --update           # 変更されたファイルのみ再抽出し、既存グラフにマージ
-/graphify ./raw --cluster-only     # 既存グラフのクラスタリングを再実行（再抽出なし）
-/graphify ./raw --no-viz           # HTML をスキップ、レポート + JSON のみ生成
-/graphify ./raw --obsidian                          # Obsidian ボールトも生成（オプトイン）
-/graphify ./raw --obsidian --obsidian-dir ~/vaults/myproject  # ボールトを特定のディレクトリに書き込み
+/kb-graph                          # カレントディレクトリで実行
+/kb-graph ./raw                    # 特定のフォルダで実行
+/kb-graph ./raw --mode deep        # より積極的な INFERRED エッジ抽出
+/kb-graph ./raw --update           # 変更されたファイルのみ再抽出し、既存グラフにマージ
+/kb-graph ./raw --cluster-only     # 既存グラフのクラスタリングを再実行（再抽出なし）
+/kb-graph ./raw --no-viz           # HTML をスキップ、レポート + JSON のみ生成
+/kb-graph ./raw --obsidian                          # Obsidian ボールトも生成（オプトイン）
+/kb-graph ./raw --obsidian --obsidian-dir ~/vaults/myproject  # ボールトを特定のディレクトリに書き込み
 
-/graphify add https://arxiv.org/abs/1706.03762        # 論文を取得、保存、グラフを更新
-/graphify add https://x.com/karpathy/status/...       # ツイートを取得
-/graphify add https://... --author "Name"             # 元の著者をタグ付け
-/graphify add https://... --contributor "Name"        # コーパスに追加した人をタグ付け
+/kb-graph add https://arxiv.org/abs/1706.03762        # 論文を取得、保存、グラフを更新
+/kb-graph add https://x.com/karpathy/status/...       # ツイートを取得
+/kb-graph add https://... --author "Name"             # 元の著者をタグ付け
+/kb-graph add https://... --contributor "Name"        # コーパスに追加した人をタグ付け
 
-/graphify query "アテンションとオプティマイザを結ぶものは？"
-/graphify query "アテンションとオプティマイザを結ぶものは？" --dfs   # 特定のパスをトレース
-/graphify query "アテンションとオプティマイザを結ぶものは？" --budget 1500  # N トークンで上限設定
-/graphify path "DigestAuth" "Response"
-/graphify explain "SwinTransformer"
+/kb-graph query "アテンションとオプティマイザを結ぶものは？"
+/kb-graph query "アテンションとオプティマイザを結ぶものは？" --dfs   # 特定のパスをトレース
+/kb-graph query "アテンションとオプティマイザを結ぶものは？" --budget 1500  # N トークンで上限設定
+/kb-graph path "DigestAuth" "Response"
+/kb-graph explain "SwinTransformer"
 
-/graphify ./raw --watch            # ファイル変更時にグラフを自動同期（コード：即時、ドキュメント：通知）
-/graphify ./raw --wiki             # エージェントがクロール可能な wiki を構築（index.md + コミュニティごとの記事）
-/graphify ./raw --svg              # graph.svg をエクスポート
-/graphify ./raw --graphml          # graph.graphml をエクスポート（Gephi、yEd）
-/graphify ./raw --neo4j            # Neo4j 用の cypher.txt を生成
-/graphify ./raw --neo4j-push bolt://localhost:7687    # 実行中の Neo4j インスタンスに直接プッシュ
-/graphify ./raw --mcp              # MCP stdio サーバーを起動
+/kb-graph ./raw --watch            # ファイル変更時にグラフを自動同期（コード：即時、ドキュメント：通知）
+/kb-graph ./raw --wiki             # エージェントがクロール可能な wiki を構築（index.md + コミュニティごとの記事）
+/kb-graph ./raw --svg              # graph.svg をエクスポート
+/kb-graph ./raw --graphml          # graph.graphml をエクスポート（Gephi、yEd）
+/kb-graph ./raw --neo4j            # Neo4j 用の cypher.txt を生成
+/kb-graph ./raw --neo4j-push bolt://localhost:7687    # 実行中の Neo4j インスタンスに直接プッシュ
+/kb-graph ./raw --mcp              # MCP stdio サーバーを起動
 
 # git フック - プラットフォーム非依存、コミット時とブランチ切り替え時にグラフを再構築
 graphify hook install
@@ -229,7 +229,7 @@ NetworkX + Leiden（graspologic） + tree-sitter + vis.js。意味的抽出は C
 <details>
 <summary>コントリビューション</summary>
 
-**実例** は最も信頼を築くコントリビューションです。実際のコーパスで `/graphify` を実行し、出力を `worked/{slug}/` に保存し、グラフが正しく捉えたもの・間違えたものを評価する正直な `review.md` を書き、PR を提出してください。
+**実例** は最も信頼を築くコントリビューションです。実際のコーパスで `/kb-graph` を実行し、出力を `worked/{slug}/` に保存し、グラフが正しく捉えたもの・間違えたものを評価する正直な `review.md` を書き、PR を提出してください。
 
 **抽出バグ** - 入力ファイル、キャッシュエントリ（`graphify-out/cache/`）、何が見逃された/捏造されたかを添えて issue を開いてください。
 

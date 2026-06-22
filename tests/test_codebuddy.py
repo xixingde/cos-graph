@@ -60,10 +60,10 @@ def test_codebuddy_skill_file_contains_frontmatter(tmp_path):
 
 
 def test_codebuddy_skill_file_references_graphify_query(tmp_path):
-    """/graphify skill must mention graphify query (query-first policy)."""
+    """/kb-graph skill must mention graphify query (query-first policy)."""
     _codebuddy_install_user(tmp_path)
     content = _skill_path_user(tmp_path).read_text()
-    assert "graphify query" in content or "/graphify query" in content
+    assert "graphify query" in content or "/kb-graph query" in content
 
 
 # ---------------------------------------------------------------------------

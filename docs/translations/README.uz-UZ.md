@@ -14,14 +14,14 @@
   <a href="https://www.linkedin.com/in/safi-shamsi"><img src="https://img.shields.io/badge/LinkedIn-Safi%20Shamsi-0077B5?logo=linkedin" alt="LinkedIn"/></a>
 </p>
 
-**Sun'iy intellektga asoslangan kod yordamchilari uchun ko'nikma.** Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro yoki Google Antigravity da `/graphify` deb yozing — u sizning fayllaringizni o'qiydi, bilim grafini quradi va siz bilmagan tuzilmani sizga qaytaradi. Kod bazasini tezroq tushuning. Arxitektura qarorlari ortidagi "nima uchun" savoliga javob toping.
+**Sun'iy intellektga asoslangan kod yordamchilari uchun ko'nikma.** Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro yoki Google Antigravity da `/kb-graph` deb yozing — u sizning fayllaringizni o'qiydi, bilim grafini quradi va siz bilmagan tuzilmani sizga qaytaradi. Kod bazasini tezroq tushuning. Arxitektura qarorlari ortidagi "nima uchun" savoliga javob toping.
 
 To'liq multimodal. Kod, PDF, markdown, ekran tasvirlari, diagrammalar, doska suratlari, boshqa tillardagi tasvirlar, video va audio fayllarni qo'shing — graphify ularning barchasidan tushuncha va aloqalarni chiqarib, bitta grafga birlashtiradi. Videolar Whisper yordamida mahalliy ravishda transkripsiya qilinadi, sizning korpusingizdan olingan domen-maxsus so'rov bilan. tree-sitter AST orqali 25 ta dasturlash tilini qo'llab-quvvatlaydi (Python, JS, TS, Go, Rust, Java, C, C++, Ruby, C#, Kotlin, Scala, PHP, Swift, Lua, Zig, PowerShell, Elixir, Objective-C, Julia, Verilog, SystemVerilog, Vue, Svelte, Dart).
 
 > Andrej Karpati maqolalar, tvitlar, ekran tasvirlari va eslatmalarni saqlaydigan `/raw` papkasini yuritadi. graphify ushbu muammoga javob — xom fayllarni o'qishga nisbatan har bir so'rov uchun **71,5 marta** kamroq token, sessiyalar orasida saqlanadi, topilgan va xulosa qilinganlar haqida halol.
 
 ```
-/graphify .                        # istalgan papka bilan ishlaydi — kod, eslatmalar, maqolalar, hammasi
+/kb-graph .                        # istalgan papka bilan ishlaydi — kod, eslatmalar, maqolalar, hammasi
 ```
 
 ```
@@ -91,7 +91,7 @@ pip install graphifyy && graphify install
 Keyin AI yordamchingizni oching va kiriting:
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 Eslatma: Codex ko'nikmalar uchun `/` o'rniga `$` ishlatadi, shuning uchun `$graphify .` deb kiriting.
@@ -113,20 +113,20 @@ Graf qurilgandan so'ng, loyihangizda buni bir marta bajaring:
 ## Foydalanish
 
 ```
-/graphify                          # joriy katalog
-/graphify ./raw                    # ma'lum bir papka
-/graphify ./raw --mode deep        # INFERRED qirralarini agressivroq chiqarish
-/graphify ./raw --update           # faqat o'zgargan fayllarni qayta chiqarish
-/graphify ./raw --directed         # yo'naltirilgan graf
-/graphify ./raw --cluster-only     # mavjud grafda klasterlashni qayta ishga tushirish
-/graphify ./raw --no-viz           # HTML siz, faqat hisobot + JSON
-/graphify ./raw --obsidian         # Obsidian vault yaratish (opsional)
+/kb-graph                          # joriy katalog
+/kb-graph ./raw                    # ma'lum bir papka
+/kb-graph ./raw --mode deep        # INFERRED qirralarini agressivroq chiqarish
+/kb-graph ./raw --update           # faqat o'zgargan fayllarni qayta chiqarish
+/kb-graph ./raw --directed         # yo'naltirilgan graf
+/kb-graph ./raw --cluster-only     # mavjud grafda klasterlashni qayta ishga tushirish
+/kb-graph ./raw --no-viz           # HTML siz, faqat hisobot + JSON
+/kb-graph ./raw --obsidian         # Obsidian vault yaratish (opsional)
 
-/graphify add https://arxiv.org/abs/1706.03762   # maqolani olish
-/graphify add <video-url>                         # audio yuklab olish, transkripsiya qilish va qo'shish
-/graphify query "Attention ni optimallashtiruvchi bilan nima bog'laydi?"
-/graphify path "DigestAuth" "Response"
-/graphify explain "SwinTransformer"
+/kb-graph add https://arxiv.org/abs/1706.03762   # maqolani olish
+/kb-graph add <video-url>                         # audio yuklab olish, transkripsiya qilish va qo'shish
+/kb-graph query "Attention ni optimallashtiruvchi bilan nima bog'laydi?"
+/kb-graph path "DigestAuth" "Response"
+/kb-graph explain "SwinTransformer"
 
 graphify hook install              # Git ilgaklarini o'rnatish
 graphify update ./src              # kod fayllarini qayta chiqarish, LLM siz

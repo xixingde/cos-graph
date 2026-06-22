@@ -14,14 +14,14 @@
   <a href="https://www.linkedin.com/in/safi-shamsi"><img src="https://img.shields.io/badge/LinkedIn-Safi%20Shamsi-0077B5?logo=linkedin" alt="LinkedIn"/></a>
 </p>
 
-**एक AI कोडिंग असिस्टेंट स्किल।** Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro या Google Antigravity में `/graphify` टाइप करें — यह आपकी फ़ाइलें पढ़ता है, एक नॉलेज ग्राफ बनाता है, और आपको वह संरचना वापस देता है जो आप नहीं जानते थे कि मौजूद है। कोडबेस को तेज़ी से समझें। आर्किटेक्चरल निर्णयों के पीछे का "क्यों" खोजें।
+**एक AI कोडिंग असिस्टेंट स्किल।** Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro या Google Antigravity में `/kb-graph` टाइप करें — यह आपकी फ़ाइलें पढ़ता है, एक नॉलेज ग्राफ बनाता है, और आपको वह संरचना वापस देता है जो आप नहीं जानते थे कि मौजूद है। कोडबेस को तेज़ी से समझें। आर्किटेक्चरल निर्णयों के पीछे का "क्यों" खोजें।
 
 पूरी तरह मल्टीमोडल। कोड, PDFs, मार्कडाउन, स्क्रीनशॉट, डायग्राम, व्हाइटबोर्ड फोटो, अन्य भाषाओं में छवियां, या वीडियो और ऑडियो फ़ाइलें डालें — graphify इन सभी से अवधारणाएं और संबंध निकालता है और उन्हें एक ग्राफ में जोड़ता है। वीडियो को Whisper से स्थानीय रूप से ट्रांसक्राइब किया जाता है। 25 प्रोग्रामिंग भाषाएं tree-sitter AST के माध्यम से समर्थित हैं (Python, JS, TS, Go, Rust, Java, C, C++, Ruby, C#, Kotlin, Scala, PHP, Swift, Lua, Zig, PowerShell, Elixir, Objective-C, Julia, Verilog, SystemVerilog, Vue, Svelte, Dart)।
 
 > Andrej Karpathy एक `/raw` फोल्डर रखते हैं जहां वह papers, tweets, स्क्रीनशॉट और नोट्स डालते हैं। graphify उस समस्या का जवाब है — रॉ फ़ाइलें पढ़ने की तुलना में प्रति क्वेरी **71.5x** कम tokens, सत्रों में स्थायी, ईमानदार कि क्या पाया गया बनाम अनुमान लगाया गया।
 
 ```
-/graphify .                        # किसी भी फोल्डर पर काम करता है — कोडबेस, नोट्स, papers, सब कुछ
+/kb-graph .                        # किसी भी फोल्डर पर काम करता है — कोडबेस, नोट्स, papers, सब कुछ
 ```
 
 ```
@@ -90,24 +90,24 @@ pip install graphifyy && graphify install
 फिर अपना AI कोडिंग असिस्टेंट खोलें और टाइप करें:
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 ## उपयोग
 
 ```
-/graphify                          # वर्तमान डायरेक्टरी
-/graphify ./raw                    # विशिष्ट फोल्डर
-/graphify ./raw --update           # केवल बदली हुई फ़ाइलें फिर से निकालें
-/graphify ./raw --directed         # निर्देशित ग्राफ
-/graphify ./raw --no-viz           # केवल रिपोर्ट + JSON
-/graphify ./raw --obsidian         # Obsidian vault बनाएं
+/kb-graph                          # वर्तमान डायरेक्टरी
+/kb-graph ./raw                    # विशिष्ट फोल्डर
+/kb-graph ./raw --update           # केवल बदली हुई फ़ाइलें फिर से निकालें
+/kb-graph ./raw --directed         # निर्देशित ग्राफ
+/kb-graph ./raw --no-viz           # केवल रिपोर्ट + JSON
+/kb-graph ./raw --obsidian         # Obsidian vault बनाएं
 
-/graphify add https://arxiv.org/abs/1706.03762   # paper प्राप्त करें
-/graphify add <video-url>                         # वीडियो ट्रांसक्राइब करें
-/graphify query "attention और optimizer को क्या जोड़ता है?"
-/graphify path "DigestAuth" "Response"
-/graphify explain "SwinTransformer"
+/kb-graph add https://arxiv.org/abs/1706.03762   # paper प्राप्त करें
+/kb-graph add <video-url>                         # वीडियो ट्रांसक्राइब करें
+/kb-graph query "attention और optimizer को क्या जोड़ता है?"
+/kb-graph path "DigestAuth" "Response"
+/kb-graph explain "SwinTransformer"
 
 graphify hook install              # Git hooks इंस्टॉल करें
 graphify update ./src              # कोड फ़ाइलें पुनः निकालें, LLM की जरूरत नहीं

@@ -13,14 +13,14 @@
   <a href="https://github.com/sponsors/safishamsi"><img src="https://img.shields.io/badge/sponsor-safishamsi-ea4aaa?logo=github-sponsors" alt="Sponsor"/></a>
 </p>
 
-**Umiejętność dla asystenta kodowania AI.** Wpisz `/graphify` w Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro lub Google Antigravity — czyta Twoje pliki, buduje graf wiedzy i zwraca Ci strukturę, o której nie wiedziałeś, że istnieje. Rozumiej bazę kodu szybciej. Znajdź „dlaczego" za decyzjami architektonicznymi.
+**Umiejętność dla asystenta kodowania AI.** Wpisz `/kb-graph` w Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro lub Google Antigravity — czyta Twoje pliki, buduje graf wiedzy i zwraca Ci strukturę, o której nie wiedziałeś, że istnieje. Rozumiej bazę kodu szybciej. Znajdź „dlaczego" za decyzjami architektonicznymi.
 
 W pełni multimodalny. Dodaj kod, PDF, markdown, zrzuty ekranu, diagramy, zdjęcia tablic, obrazy w innych językach lub pliki wideo i audio — graphify wyodrębnia koncepcje i relacje ze wszystkiego i łączy je w jeden graf. Wideo są transkrybowane lokalnie za pomocą Whisper. Obsługuje 25 języków programowania przez tree-sitter AST.
 
 > Andrej Karpathy prowadzi folder `/raw`, gdzie wrzuca artykuły, tweety, zrzuty ekranu i notatki. graphify jest odpowiedzią na ten problem — **71,5x** mniej tokenów na zapytanie w porównaniu z czytaniem surowych plików, trwały między sesjami.
 
 ```
-/graphify .                        # działa na dowolnym folderze
+/kb-graph .                        # działa na dowolnym folderze
 ```
 
 ```
@@ -54,11 +54,11 @@ pip install graphifyy && graphify install
 ## Użycie
 
 ```
-/graphify .
-/graphify ./raw --update           # tylko zmienione pliki
-/graphify ./raw --mode deep
-/graphify query "co łączy Attention z optymalizatorem?"
-/graphify path "DigestAuth" "Response"
+/kb-graph .
+/kb-graph ./raw --update           # tylko zmienione pliki
+/kb-graph ./raw --mode deep
+/kb-graph query "co łączy Attention z optymalizatorem?"
+/kb-graph path "DigestAuth" "Response"
 graphify hook install
 graphify update ./src
 ```

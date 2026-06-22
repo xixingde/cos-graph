@@ -28,7 +28,7 @@ graphify install --platform claw        # OpenClaw
 Then open your AI coding assistant in this directory and type:
 
 ```
-/graphify ./raw
+/kb-graph ./raw
 ```
 
 ## What to expect

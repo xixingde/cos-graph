@@ -13,14 +13,14 @@
   <a href="https://github.com/sponsors/safishamsi"><img src="https://img.shields.io/badge/sponsor-safishamsi-ea4aaa?logo=github-sponsors" alt="Sponsor"/></a>
 </p>
 
-**En färdighet för AI-kodassistenter.** Skriv `/graphify` i Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro eller Google Antigravity — den läser dina filer, bygger ett kunskapsgrafer och ger tillbaka strukturen du inte visste fanns. Förstå en kodbas snabbare. Hitta "varför" bakom arkitekturella beslut.
+**En färdighet för AI-kodassistenter.** Skriv `/kb-graph` i Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro eller Google Antigravity — den läser dina filer, bygger ett kunskapsgrafer och ger tillbaka strukturen du inte visste fanns. Förstå en kodbas snabbare. Hitta "varför" bakom arkitekturella beslut.
 
 Helt multimodal. Lägg till kod, PDF:er, markdown, skärmdumpar, diagram, whiteboardfoton, bilder på andra språk eller video- och ljudfiler — graphify extraherar begrepp och relationer från allt och kopplar samman dem i ett enda graf. Videor transkriberas lokalt med Whisper. Stödjer 25 programmeringsspråk via tree-sitter AST.
 
 > Andrej Karpathy håller en `/raw`-mapp där han lägger papper, tweets, skärmdumpar och anteckningar. graphify är svaret på det problemet — **71,5x** färre tokens per fråga jämfört med att läsa råfiler, beständigt mellan sessioner.
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 ```
@@ -54,10 +54,10 @@ pip install graphifyy && graphify install
 ## Användning
 
 ```
-/graphify .
-/graphify ./raw --update
-/graphify query "vad kopplar Attention till optimizern?"
-/graphify path "DigestAuth" "Response"
+/kb-graph .
+/kb-graph ./raw --update
+/kb-graph query "vad kopplar Attention till optimizern?"
+/kb-graph path "DigestAuth" "Response"
 graphify hook install
 graphify update ./src
 ```

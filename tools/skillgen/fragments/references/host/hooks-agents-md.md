@@ -12,7 +12,7 @@ graphify hook uninstall  # remove
 graphify hook status     # check
 ```
 
-After every `git commit`, the hook detects which code files changed (via `git diff HEAD~1`), re-runs AST extraction on those files, and rebuilds `graph.json` and `GRAPH_REPORT.md`. Doc/image changes are ignored by the hook - run `/graphify --update` manually for those.
+After every `git commit`, the hook detects which code files changed (via `git diff HEAD~1`), re-runs AST extraction on those files, and rebuilds `graph.json` and `GRAPH_REPORT.md`. Doc/image changes are ignored by the hook - run `/kb-graph --update` manually for those.
 
 If a post-commit hook already exists, graphify appends to it rather than replacing it.
 
@@ -26,7 +26,7 @@ Run once per project to make graphify always-on in @@HOST_DISPLAY@@ sessions:
 @@AGENTS_INSTALL_BLOCK@@
 ```
 
-This writes a `## graphify` section to the local `AGENTS.md` that instructs @@HOST_DISPLAY@@ to check the graph before answering codebase questions and rebuild it after code changes. No manual `/graphify` needed in future sessions.
+This writes a `## graphify` section to the local `AGENTS.md` that instructs @@HOST_DISPLAY@@ to check the graph before answering codebase questions and rebuild it after code changes. No manual `/kb-graph` needed in future sessions.
 @@AGENTS_PRETOOLUSE_NOTE@@
 ```bash
 @@AGENTS_UNINSTALL_BLOCK@@

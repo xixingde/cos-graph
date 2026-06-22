@@ -13,14 +13,14 @@
   <a href="https://github.com/sponsors/safishamsi"><img src="https://img.shields.io/badge/sponsor-safishamsi-ea4aaa?logo=github-sponsors" alt="Sponsor"/></a>
 </p>
 
-**AI 程式碼助手的技能。** 在 Claude Code、Codex、OpenCode、Cursor、Gemini CLI、GitHub Copilot CLI、VS Code Copilot Chat、Aider、OpenClaw、Factory Droid、Trae、Hermes、Kiro 或 Google Antigravity 中輸入 `/graphify` — 它會讀取您的檔案、建立知識圖譜，並返回您不知道存在的結構。更快理解程式碼庫。找到架構決策背後的「為什麼」。
+**AI 程式碼助手的技能。** 在 Claude Code、Codex、OpenCode、Cursor、Gemini CLI、GitHub Copilot CLI、VS Code Copilot Chat、Aider、OpenClaw、Factory Droid、Trae、Hermes、Kiro 或 Google Antigravity 中輸入 `/kb-graph` — 它會讀取您的檔案、建立知識圖譜，並返回您不知道存在的結構。更快理解程式碼庫。找到架構決策背後的「為什麼」。
 
 完全多模態。添加程式碼、PDF、Markdown、截圖、圖表、白板照片、其他語言的圖片或視訊和音訊檔案 — graphify 從所有內容中提取概念和關係，並將它們連接成單一圖譜。視訊使用 Whisper 在本地轉錄。透過 tree-sitter AST 支援 25 種程式語言。
 
 > Andrej Karpathy 維護一個 `/raw` 資料夾，在那裡他放置論文、推文、截圖和筆記。graphify 是這個問題的答案 — 每次查詢比讀取原始檔案少 **71.5 倍** 的 token，在會話之間持久存在。
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 ```
@@ -54,10 +54,10 @@ pip install graphifyy && graphify install
 ## 使用方式
 
 ```
-/graphify .
-/graphify ./raw --update
-/graphify query "什麼將 Attention 與 optimizer 連接起來？"
-/graphify path "DigestAuth" "Response"
+/kb-graph .
+/kb-graph ./raw --update
+/kb-graph query "什麼將 Attention 與 optimizer 連接起來？"
+/kb-graph path "DigestAuth" "Response"
 graphify hook install
 graphify update ./src
 ```

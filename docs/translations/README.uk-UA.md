@@ -23,12 +23,12 @@
   </a>
 </p>
 
-Введіть `/graphify` у своєму ШІ-асистенті для кодингу, і він нанесе весь ваш проект — код, документи, PDF, зображення, відео — на граф знань, який можна запитувати замість того, щоб шукати по файлах.
+Введіть `/kb-graph` у своєму ШІ-асистенті для кодингу, і він нанесе весь ваш проект — код, документи, PDF, зображення, відео — на граф знань, який можна запитувати замість того, щоб шукати по файлах.
 
 Працює в Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kimi Code, Kiro, Pi та Google Antigravity.
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 Це все. Ви отримуєте три файли:
@@ -96,7 +96,7 @@ pip install graphifyy
 graphify install
 ```
 
-Це все. Відкрийте асистента і введіть `/graphify .`
+Це все. Відкрийте асистента і введіть `/kb-graph .`
 
 Щоб встановити навичку в поточний репозиторій замість профілю користувача, додайте `--project`:
 
@@ -107,7 +107,7 @@ graphify install --project --platform codex
 
 Встановлення на рівні проєкту записуються в поточну директорію, наприклад .claude/skills/graphify/SKILL.md або .agents/skills/graphify/SKILL.md, і виводять підказку git add для файлів, які можна закомітити. Команди для окремих платформ, що підтримують інсталяції на рівні проєкту, приймають той самий прапорець, наприклад graphify claude install --project або graphify codex install --project.
 
-> **Примітка для PowerShell:** Використовуйте `graphify .` замість `/graphify .` — ведучий слеш є роздільником шляху в PowerShell.
+> **Примітка для PowerShell:** Використовуйте `graphify .` замість `/kb-graph .` — ведучий слеш є роздільником шляху в PowerShell.
 
 > **`graphify: command not found`?** Використовуйте `uv tool install graphifyy` або `pipx install graphifyy` — обидва автоматично додають CLI до PATH. При використанні звичайного `pip` додайте `~/.local/bin` (Linux) або `~/Library/Python/3.x/bin` (Mac) до вашого PATH, або запустіть `python -m graphify`.
 
@@ -135,7 +135,7 @@ graphify install --project --platform codex
 | Google Antigravity | `graphify antigravity install` |
 
 > Користувачам Codex: також додайте `multi_agent = true` під `[features]` у `~/.codex/config.toml`.
-> Codex використовує `$graphify` замість `/graphify`.
+> Codex використовує `$graphify` замість `/kb-graph`.
 
 ### Додаткові пакети (опціонально)
 
@@ -230,21 +230,21 @@ graphify extract ./docs --google-workspace
 ## Часті команди
 
 ```bash
-/graphify .                        # побудувати граф для поточної папки
-/graphify ./docs --update          # повторно витягнути лише змінені файли
-/graphify . --cluster-only         # перезапустити кластеризацію без повторного витягування
-/graphify . --cluster-only --resolution 1.5      # більш дрібні спільноти
-/graphify . --cluster-only --exclude-hubs 99     # виключити утилітарні суперхаби з рейтингів “god-node” вузлів-богів
-/graphify . --no-viz               # пропустити HTML, лише звіт + JSON
-/graphify . --wiki                 # побудувати markdown-вікі з графу
+/kb-graph .                        # побудувати граф для поточної папки
+/kb-graph ./docs --update          # повторно витягнути лише змінені файли
+/kb-graph . --cluster-only         # перезапустити кластеризацію без повторного витягування
+/kb-graph . --cluster-only --resolution 1.5      # більш дрібні спільноти
+/kb-graph . --cluster-only --exclude-hubs 99     # виключити утилітарні суперхаби з рейтингів “god-node” вузлів-богів
+/kb-graph . --no-viz               # пропустити HTML, лише звіт + JSON
+/kb-graph . --wiki                 # побудувати markdown-вікі з графу
 graphify export callflow-html      # Mermaid архітектура/flow-викликів HTML (автоматично регенерується на кожен git-коміт, якщо встановлений hook)
 
-/graphify query "що пов'язує auth з базою даних?"
-/graphify path "UserService" "DatabasePool"
-/graphify explain "RateLimiter"
+/kb-graph query "що пов'язує auth з базою даних?"
+/kb-graph path "UserService" "DatabasePool"
+/kb-graph explain "RateLimiter"
 
-/graphify add https://arxiv.org/abs/1706.03762   # завантажити статтю і додати її
-/graphify add <youtube-url>                       # транскрибувати і додати відео
+/kb-graph add https://arxiv.org/abs/1706.03762   # завантажити статтю і додати її
+/kb-graph add <youtube-url>                       # транскрибувати і додати відео
 
 graphify hook install              # автоматичне перебудування при git-коміті
 graphify merge-graphs a.json b.json              # об'єднати два графи
@@ -289,10 +289,10 @@ graphify-out/cost.json        # лише локальний
 ```
 
 **Робочий процес:**
-1. Одна людина запускає `/graphify .` і комітить `graphify-out/`.
+1. Одна людина запускає `/kb-graph .` і комітить `graphify-out/`.
 2. Усі виконують pull — їхній асистент одразу читає граф.
 3. Запустіть `graphify hook install` для автоматичного перебудування після кожного коміту (лише AST, без витрат API). Це також налаштовує git merge driver, щоб `graph.json` ніколи не залишався з маркерами конфліктів — два розробники, що комітять одночасно, отримають автоматично об'єднані графи.
-4. Коли документи або статті змінюються, запустіть `/graphify --update`, щоб оновити ці вузли.
+4. Коли документи або статті змінюються, запустіть `/kb-graph --update`, щоб оновити ці вузли.
 
 ---
 
@@ -321,7 +321,7 @@ MCP-сервер надає асистенту структурований до
 
 ## Змінні середовища
 
-Потрібні лише для **headless / CI витягування** (`graphify extract`). При запуску через навичку `/graphify` у вашому IDE API моделі надається сесією IDE — додаткових ключів не потрібно.
+Потрібні лише для **headless / CI витягування** (`graphify extract`). При запуску через навичку `/kb-graph` у вашому IDE API моделі надається сесією IDE — додаткових ключів не потрібно.
 
 | Змінна | Використання | Коли потрібна |
 |---|---|---|
@@ -353,7 +353,7 @@ MCP-сервер надає асистенту структурований до
 
 - **Файли коду** — обробляються локально через tree-sitter. Нічого не покидає ваш комп'ютер.
 - **Відео / аудіо** — транскрибуються локально за допомогою faster-whisper. Нічого не покидає ваш комп'ютер.
-- **Документи, PDF, зображення** — надсилаються до вашого ШІ-асистента для семантичного витягування (через навичку `/graphify`, використовуючи модель, що запущена у вашому IDE). Безголове `graphify extract` потребує `GEMINI_API_KEY` / `GOOGLE_API_KEY` (Gemini), `MOONSHOT_API_KEY` (Kimi), `ANTHROPIC_API_KEY` (Claude), `OPENAI_API_KEY` (OpenAI), `DEEPSEEK_API_KEY` (DeepSeek), запущеного екземпляра Ollama (`OLLAMA_BASE_URL`), AWS-облікових даних через стандартний ланцюг провайдерів (Bedrock — без API-ключа, використовує IAM) або бінарного файлу `claude` CLI (Claude Code — без API-ключа, використовує вашу підписку Claude). Прапор `--dedup-llm` використовує той самий ключ.
+- **Документи, PDF, зображення** — надсилаються до вашого ШІ-асистента для семантичного витягування (через навичку `/kb-graph`, використовуючи модель, що запущена у вашому IDE). Безголове `graphify extract` потребує `GEMINI_API_KEY` / `GOOGLE_API_KEY` (Gemini), `MOONSHOT_API_KEY` (Kimi), `ANTHROPIC_API_KEY` (Claude), `OPENAI_API_KEY` (OpenAI), `DEEPSEEK_API_KEY` (DeepSeek), запущеного екземпляра Ollama (`OLLAMA_BASE_URL`), AWS-облікових даних через стандартний ланцюг провайдерів (Bedrock — без API-ключа, використовує IAM) або бінарного файлу `claude` CLI (Claude Code — без API-ключа, використовує вашу підписку Claude). Прапор `--dedup-llm` використовує той самий ключ.
 - Без телеметрії, без відстеження використання, без аналітики.
 
 ---
@@ -369,7 +369,7 @@ pip встановлює скрипти в директорію bin для ко�
 **`python -m graphify` працює, але команда `graphify` — ні**
 PATH вашої оболонки не включає директорію скриптів Python. Використовуйте `uv` або `pipx` замість звичайного `pip`.
 
-**`/graphify .` викликає "path not recognized" в PowerShell**
+**`/kb-graph .` викликає "path not recognized" в PowerShell**
 PowerShell трактує ведучий `/` як роздільник шляху. Використовуйте `graphify .` (без слеша) на Windows.
 
 **Граф має менше вузлів після `--update` або перебудови**
@@ -415,30 +415,30 @@ graphify install  # перезаписує файл навички
 ## Повний довідник команд
 
 ```
-/graphify                          # запустити в поточному каталозі
-/graphify ./raw                    # запустити у конкретній папці
-/graphify ./raw --mode deep        # більш агресивне витягування зв'язків
-/graphify ./raw --update           # повторно витягнути лише змінені файли
-/graphify ./raw --directed         # зберегти напрямок ребер
-/graphify ./raw --cluster-only     # повторна кластеризація існуючого графу
-/graphify ./raw --no-viz           # пропустити HTML-візуалізацію
-/graphify ./raw --obsidian         # згенерувати сховище Obsidian
-/graphify ./raw --wiki             # побудувати markdown-вікі для обходу агентами
-/graphify ./raw --svg              # експортувати graph.svg
-/graphify ./raw --graphml          # експортувати для Gephi / yEd
-/graphify ./raw --neo4j            # згенерувати cypher.txt для Neo4j
-/graphify ./raw --neo4j-push bolt://localhost:7687
-/graphify ./raw --watch            # автосинхронізація при зміні файлів
-/graphify ./raw --mcp              # запустити MCP stdio-сервер
+/kb-graph                          # запустити в поточному каталозі
+/kb-graph ./raw                    # запустити у конкретній папці
+/kb-graph ./raw --mode deep        # більш агресивне витягування зв'язків
+/kb-graph ./raw --update           # повторно витягнути лише змінені файли
+/kb-graph ./raw --directed         # зберегти напрямок ребер
+/kb-graph ./raw --cluster-only     # повторна кластеризація існуючого графу
+/kb-graph ./raw --no-viz           # пропустити HTML-візуалізацію
+/kb-graph ./raw --obsidian         # згенерувати сховище Obsidian
+/kb-graph ./raw --wiki             # побудувати markdown-вікі для обходу агентами
+/kb-graph ./raw --svg              # експортувати graph.svg
+/kb-graph ./raw --graphml          # експортувати для Gephi / yEd
+/kb-graph ./raw --neo4j            # згенерувати cypher.txt для Neo4j
+/kb-graph ./raw --neo4j-push bolt://localhost:7687
+/kb-graph ./raw --watch            # автосинхронізація при зміні файлів
+/kb-graph ./raw --mcp              # запустити MCP stdio-сервер
 
-/graphify add https://arxiv.org/abs/1706.03762
-/graphify add <video-url>
-/graphify add https://... --author "Name" --contributor "Name"
+/kb-graph add https://arxiv.org/abs/1706.03762
+/kb-graph add <video-url>
+/kb-graph add https://... --author "Name" --contributor "Name"
 
-/graphify query "що пов'язує attention з optimizer?"
-/graphify query "..." --dfs --budget 1500
-/graphify path "DigestAuth" "Response"
-/graphify explain "SwinTransformer"
+/kb-graph query "що пов'язує attention з optimizer?"
+/kb-graph query "..." --dfs --budget 1500
+/kb-graph path "DigestAuth" "Response"
+/kb-graph explain "SwinTransformer"
 
 graphify uninstall                 # видалити з усіх платформ одразу
 graphify uninstall --purge         # також видалити graphify-out/
@@ -583,7 +583,7 @@ pytest tests/ -q -k "python"           # фільтрація за назвою
 
 ### Що варто додати
 
-Найкорисніший внесок — це **опрацьовані приклади**. Запустіть `/graphify` на реальному корпусі, збережіть результат у `worked/{slug}/`, напишіть чесний `review.md` про те, що граф зробив правильно і неправильно, і відкрийте PR.
+Найкорисніший внесок — це **опрацьовані приклади**. Запустіть `/kb-graph` на реальному корпусі, збережіть результат у `worked/{slug}/`, напишіть чесний `review.md` про те, що граф зробив правильно і неправильно, і відкрийте PR.
 
 **Помилки витягування** — відкрийте issue з вхідним файлом, записом кешу (`graphify-out/cache/`) і тим, що було пропущено або неправильно.
 

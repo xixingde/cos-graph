@@ -13,14 +13,14 @@
   <a href="https://github.com/sponsors/safishamsi"><img src="https://img.shields.io/badge/sponsor-safishamsi-ea4aaa?logo=github-sponsors" alt="Sponsor"/></a>
 </p>
 
-**Képesség AI kódolási asszisztensekhez.** Írja be a `/graphify` parancsot a Claude Code-ban, Codexben, OpenCode-ban, Cursorban, Gemini CLI-ben, GitHub Copilot CLI-ben, VS Code Copilot Chatben, Aiderben, OpenClawban, Factory Droidban, Traeben, Hermesben, Kiroban vagy a Google Antigravityben — beolvassa a fájljait, tudásgráfot épít, és visszaadja azt a struktúrát, amelyről nem tudta, hogy létezik. Értse meg gyorsabban a kódbázist. Találja meg az architektúrális döntések mögött álló „miértet".
+**Képesség AI kódolási asszisztensekhez.** Írja be a `/kb-graph` parancsot a Claude Code-ban, Codexben, OpenCode-ban, Cursorban, Gemini CLI-ben, GitHub Copilot CLI-ben, VS Code Copilot Chatben, Aiderben, OpenClawban, Factory Droidban, Traeben, Hermesben, Kiroban vagy a Google Antigravityben — beolvassa a fájljait, tudásgráfot épít, és visszaadja azt a struktúrát, amelyről nem tudta, hogy létezik. Értse meg gyorsabban a kódbázist. Találja meg az architektúrális döntések mögött álló „miértet".
 
 Teljesen multimodális. Adjon hozzá kódot, PDF-eket, markdownt, képernyőképeket, diagramokat, táblafotókat, más nyelvű képeket vagy video- és hangfájlokat — a graphify mindenből kinyeri a fogalmakat és kapcsolatokat, és egyetlen gráfba köti össze őket. A videókat a Whisper segítségével helyben írja át. 25 programozási nyelvet támogat tree-sitter AST-n keresztül.
 
 > Andrej Karpathy fenntart egy `/raw` mappát, ahova cikkeket, tweeteket, képernyőképeket és jegyzeteket helyez el. A graphify erre a problémára adott válasz — **71,5x** kevesebb token lekérdezésenként a nyers fájlok olvasásához képest, munkamenetek között is megmarad.
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 ```
@@ -54,10 +54,10 @@ pip install graphifyy && graphify install
 ## Használat
 
 ```
-/graphify .
-/graphify ./raw --update
-/graphify query "mi köti össze az Attentiont az optimalizálóval?"
-/graphify path "DigestAuth" "Response"
+/kb-graph .
+/kb-graph ./raw --update
+/kb-graph query "mi köti össze az Attentiont az optimalizálóval?"
+/kb-graph path "DigestAuth" "Response"
 graphify hook install
 graphify update ./src
 ```

@@ -13,14 +13,14 @@
   <a href="https://github.com/sponsors/safishamsi"><img src="https://img.shields.io/badge/sponsor-safishamsi-ea4aaa?logo=github-sponsors" alt="Sponsor"/></a>
 </p>
 
-**Taito tekoälykoodiavustajille.** Kirjoita `/graphify` Claude Codessa, Codexissa, OpenCodessa, Cursorissa, Gemini CLI:ssä, GitHub Copilot CLI:ssä, VS Code Copilot Chatissa, Aiderissa, OpenClawissa, Factory Droidissa, Traessa, Hermeksessä, Kirossa tai Google Antigravityssa — se lukee tiedostosi, rakentaa tietograafin ja palauttaa sinulle rakenteen, jota et tiennyt olevan. Ymmärrä koodikanta nopeammin. Löydä arkkitehtuuripäätösten taustalla oleva "miksi".
+**Taito tekoälykoodiavustajille.** Kirjoita `/kb-graph` Claude Codessa, Codexissa, OpenCodessa, Cursorissa, Gemini CLI:ssä, GitHub Copilot CLI:ssä, VS Code Copilot Chatissa, Aiderissa, OpenClawissa, Factory Droidissa, Traessa, Hermeksessä, Kirossa tai Google Antigravityssa — se lukee tiedostosi, rakentaa tietograafin ja palauttaa sinulle rakenteen, jota et tiennyt olevan. Ymmärrä koodikanta nopeammin. Löydä arkkitehtuuripäätösten taustalla oleva "miksi".
 
 Täysin multimodaalinen. Lisää koodia, PDF:iä, markdownia, kuvakaappauksia, kaavioita, liitutaulun valokuvia, muilla kielillä olevia kuvia tai video- ja äänitiedostoja — graphify poimii käsitteitä ja suhteita kaikesta ja yhdistää ne yhdeksi graafaksi. Videot litteroidaan paikallisesti Whisperillä. Tukee 25 ohjelmointikieltä tree-sitter AST:n kautta.
 
 > Andrej Karpathy ylläpitää `/raw`-kansiota, johon hän tallentaa papereita, tviittejä, kuvakaappauksia ja muistiinpanoja. graphify on vastaus tähän ongelmaan — **71,5x** vähemmän tokeneita kyselyä kohden verrattuna raakatiedostojen lukemiseen, pysyvä istuntojen välillä.
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 ```
@@ -54,10 +54,10 @@ pip install graphifyy && graphify install
 ## Käyttö
 
 ```
-/graphify .
-/graphify ./raw --update
-/graphify query "mikä yhdistää Attentionin optimizeriin?"
-/graphify path "DigestAuth" "Response"
+/kb-graph .
+/kb-graph ./raw --update
+/kb-graph query "mikä yhdistää Attentionin optimizeriin?"
+/kb-graph path "DigestAuth" "Response"
 graphify hook install
 graphify update ./src
 ```

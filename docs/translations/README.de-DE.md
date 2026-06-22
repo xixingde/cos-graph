@@ -14,14 +14,14 @@
   <a href="https://www.linkedin.com/in/safi-shamsi"><img src="https://img.shields.io/badge/LinkedIn-Safi%20Shamsi-0077B5?logo=linkedin" alt="LinkedIn"/></a>
 </p>
 
-**Eine KI-Coding-Assistent-Skill.** Tippe `/graphify` in Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro oder Google Antigravity — es liest deine Dateien, baut einen Wissensgraphen und gibt dir Struktur zurück, die du vorher nicht sehen konntest. Verstehe eine Codebasis schneller. Finde das „Warum" hinter Architekturentscheidungen.
+**Eine KI-Coding-Assistent-Skill.** Tippe `/kb-graph` in Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro oder Google Antigravity — es liest deine Dateien, baut einen Wissensgraphen und gibt dir Struktur zurück, die du vorher nicht sehen konntest. Verstehe eine Codebasis schneller. Finde das „Warum" hinter Architekturentscheidungen.
 
 Vollständig multimodal. Leg Code, PDFs, Markdown, Screenshots, Diagramme, Whiteboard-Fotos, Bilder in anderen Sprachen oder Video- und Audiodateien ab — graphify extrahiert Konzepte und Beziehungen aus allem und verbindet sie in einem einzigen Graphen. Videos werden lokal mit Whisper transkribiert, angetrieben durch einen domänenspezifischen Prompt aus deinem Korpus. 25 Programmiersprachen werden über tree-sitter AST unterstützt (Python, JS, TS, Go, Rust, Java, C, C++, Ruby, C#, Kotlin, Scala, PHP, Swift, Lua, Zig, PowerShell, Elixir, Objective-C, Julia, Verilog, SystemVerilog, Vue, Svelte, Dart).
 
 > Andrej Karpathy führt einen `/raw`-Ordner, in dem er Papers, Tweets, Screenshots und Notizen ablegt. graphify ist die Antwort auf dieses Problem — 71,5-fach weniger Tokens pro Abfrage gegenüber dem Lesen der Rohdateien, persistent über Sitzungen hinweg, ehrlich darüber, was gefunden vs. erschlossen wurde.
 
 ```
-/graphify .                        # funktioniert mit jedem Ordner — Codebase, Notizen, Papers, alles
+/kb-graph .                        # funktioniert mit jedem Ordner — Codebase, Notizen, Papers, alles
 ```
 
 ```
@@ -93,7 +93,7 @@ pip install graphifyy && graphify install
 Dann öffne deinen KI-Coding-Assistenten und tippe:
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 Hinweis: Codex verwendet `$` statt `/` für Skill-Aufrufe, also tippe `$graphify .`.
@@ -123,20 +123,20 @@ Nach dem Erstellen eines Graphen, führe dies einmal in deinem Projekt aus:
 ## Verwendung
 
 ```
-/graphify                          # aktuelles Verzeichnis verarbeiten
-/graphify ./raw                    # spezifischen Ordner verarbeiten
-/graphify ./raw --mode deep        # aggressivere INFERRED-Kanten-Extraktion
-/graphify ./raw --update           # nur geänderte Dateien neu extrahieren
-/graphify ./raw --directed         # gerichteten Graphen erstellen
-/graphify ./raw --cluster-only     # Clustering auf bestehendem Graphen neu ausführen
-/graphify ./raw --no-viz           # kein HTML, nur Report + JSON
-/graphify ./raw --obsidian         # Obsidian-Vault generieren (opt-in)
+/kb-graph                          # aktuelles Verzeichnis verarbeiten
+/kb-graph ./raw                    # spezifischen Ordner verarbeiten
+/kb-graph ./raw --mode deep        # aggressivere INFERRED-Kanten-Extraktion
+/kb-graph ./raw --update           # nur geänderte Dateien neu extrahieren
+/kb-graph ./raw --directed         # gerichteten Graphen erstellen
+/kb-graph ./raw --cluster-only     # Clustering auf bestehendem Graphen neu ausführen
+/kb-graph ./raw --no-viz           # kein HTML, nur Report + JSON
+/kb-graph ./raw --obsidian         # Obsidian-Vault generieren (opt-in)
 
-/graphify add https://arxiv.org/abs/1706.03762   # Paper abrufen, speichern, Graphen aktualisieren
-/graphify add <video-url>                         # Audio herunterladen, transkribieren, hinzufügen
-/graphify query "was verbindet Attention mit dem Optimizer?"
-/graphify path "DigestAuth" "Response"
-/graphify explain "SwinTransformer"
+/kb-graph add https://arxiv.org/abs/1706.03762   # Paper abrufen, speichern, Graphen aktualisieren
+/kb-graph add <video-url>                         # Audio herunterladen, transkribieren, hinzufügen
+/kb-graph query "was verbindet Attention mit dem Optimizer?"
+/kb-graph path "DigestAuth" "Response"
+/kb-graph explain "SwinTransformer"
 
 graphify hook install              # Git-Hooks installieren
 graphify update ./src              # Code-Dateien neu extrahieren, kein LLM benötigt

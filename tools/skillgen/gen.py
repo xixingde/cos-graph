@@ -134,7 +134,7 @@ _HOOKS_SOURCE = {
 _TRAE_PRETOOLUSE_NOTE = (
     "\n> **Note:** Unlike Claude Code, Trae does NOT support PreToolUse hooks. "
     "The AGENTS.md rules are the always-on mechanism — there is no automatic graph "
-    "rebuild on tool use. Run `/graphify --update` manually after code changes if "
+    "rebuild on tool use. Run `/kb-graph --update` manually after code changes if "
     "the graph needs refreshing.\n"
 )
 _AGENTS_MD_HOOKS: dict[str, dict[str, str]] = {
@@ -221,6 +221,10 @@ _CONSOLIDATION_ALLOWLIST: dict[str, frozenset[str]] = {
 def _audit_allowlist(platform_key: str) -> frozenset[str]:
     """The full set of v8 headings the audit may skip for this host."""
     return SHARED_INTRO_ALLOWLIST | _CONSOLIDATION_ALLOWLIST.get(platform_key, frozenset())
+
+
+def _rename_user_slash_command(text: str) -> str:
+    return re.sub(r"(?<![\w.-])/graphify(?![\w.-])", "/kb-graph", text)
 
 
 @dataclass(frozen=True)
@@ -589,7 +593,7 @@ def audit_coverage(platform: Platform) -> list[str]:
         return []  # monoliths are guarded by the round-trip validator instead.
 
     problems: list[str] = []
-    baseline_headings = headings(_git_show(_v8_baseline_ref(platform.key)))
+    baseline_headings = headings(_rename_user_slash_command(_git_show(_v8_baseline_ref(platform.key))))
     allowlist = _audit_allowlist(platform.key)
 
     artifacts = render(platform)
@@ -722,7 +726,7 @@ def monolith_roundtrip(platform: Platform) -> list[str]:
         return [f"[{platform.key}] monolith is missing roundtrip_ref"]
 
     rendered = render(platform)[0].content
-    original = _normalise(_git_show(platform.roundtrip_ref))
+    original = _normalise(_rename_user_slash_command(_git_show(platform.roundtrip_ref)))
 
     rendered_lines = rendered.splitlines()
     # Strip trigger lines from the original before comparing — they are non-spec
@@ -765,7 +769,7 @@ def _always_on_constants(ref: str) -> dict[str, str]:
     """
     import ast
 
-    src = _git_show(ref)
+    src = _rename_user_slash_command(_git_show(ref))
     wanted = set(ALWAYS_ON_BLOCKS.values())
     out: dict[str, str] = {}
     for node in ast.parse(src).body:

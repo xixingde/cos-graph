@@ -6,14 +6,14 @@
 [![PyPI](https://img.shields.io/pypi/v/graphifyy)](https://pypi.org/project/graphifyy/)
 [![Sponsor](https://img.shields.io/badge/sponsor-safishamsi-ea4aaa?logo=github-sponsors)](https://github.com/sponsors/safishamsi)
 
-**AI 코딩 어시스턴트를 위한 스킬.** Claude Code, Codex, OpenCode, OpenClaw, Factory Droid, 또는 Trae에서 `/graphify`를 입력하면 파일을 읽고 지식 그래프를 구축하여, 미처 몰랐던 구조를 보여줍니다. 코드베이스를 더 빠르게 이해하고, 아키텍처 결정의 "이유"를 찾아보세요.
+**AI 코딩 어시스턴트를 위한 스킬.** Claude Code, Codex, OpenCode, OpenClaw, Factory Droid, 또는 Trae에서 `/kb-graph`를 입력하면 파일을 읽고 지식 그래프를 구축하여, 미처 몰랐던 구조를 보여줍니다. 코드베이스를 더 빠르게 이해하고, 아키텍처 결정의 "이유"를 찾아보세요.
 
 완전한 멀티모달 지원. 코드, PDF, 마크다운, 스크린샷, 다이어그램, 화이트보드 사진, 심지어 다른 언어로 된 이미지까지 — graphify는 Claude Vision을 사용하여 이 모든 것에서 개념과 관계를 추출하고 하나의 그래프로 연결합니다. tree-sitter AST를 통해 20개 언어를 지원합니다(Python, JS, TS, Go, Rust, Java, C, C++, Ruby, C#, Kotlin, Scala, PHP, Swift, Lua, Zig, PowerShell, Elixir, Objective-C, Julia).
 
 > Andrej Karpathy는 논문, 트윗, 스크린샷, 메모를 모아두는 `/raw` 폴더를 관리합니다. graphify는 바로 그 문제에 대한 답입니다 — 원본 파일을 직접 읽는 것 대비 쿼리당 토큰 소비가 71.5배 적고, 세션 간에 영속적이며, 발견한 것과 추측한 것을 정직하게 구분합니다.
 
 ```
-/graphify .                        # 어떤 폴더든 동작 - 코드베이스, 노트, 논문, 무엇이든
+/kb-graph .                        # 어떤 폴더든 동작 - 코드베이스, 노트, 논문, 무엇이든
 ```
 
 ```
@@ -72,7 +72,7 @@ Codex 사용자는 병렬 추출을 위해 `~/.codex/config.toml`의 `[features]
 그런 다음 AI 코딩 어시스턴트를 열고 입력하세요:
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 참고: Codex는 스킬 호출에 `/` 대신 `$`를 사용하므로 `$graphify .`라고 입력하세요.
@@ -103,9 +103,9 @@ Codex 사용자는 병렬 추출을 위해 `~/.codex/config.toml`의 `[features]
 
 상시 작동 훅은 `GRAPH_REPORT.md`를 노출합니다 — 갓 노드, 커뮤니티, 의외의 연결을 한 페이지로 요약한 것입니다. 어시스턴트는 파일 검색 전에 이것을 읽으므로 키워드 매칭이 아닌 구조 기반으로 탐색합니다. 이것만으로 대부분의 일상적인 질문을 처리할 수 있습니다.
 
-`/graphify query`, `/graphify path`, `/graphify explain`은 더 깊이 들어갑니다: 원시 `graph.json`을 홉 단위로 순회하고, 노드 간의 정확한 경로를 추적하며, 엣지 수준의 세부 정보(관계 유형, 신뢰도 점수, 소스 위치)를 보여줍니다. 일반적인 오리엔테이션이 아닌 그래프에서 특정 질문에 답하고 싶을 때 사용하세요.
+`/kb-graph query`, `/kb-graph path`, `/kb-graph explain`은 더 깊이 들어갑니다: 원시 `graph.json`을 홉 단위로 순회하고, 노드 간의 정확한 경로를 추적하며, 엣지 수준의 세부 정보(관계 유형, 신뢰도 점수, 소스 위치)를 보여줍니다. 일반적인 오리엔테이션이 아닌 그래프에서 특정 질문에 답하고 싶을 때 사용하세요.
 
-이렇게 생각하면 됩니다: 상시 작동 훅은 어시스턴트에게 지도를 주고, `/graphify` 명령은 그 지도를 정확하게 탐색하게 합니다.
+이렇게 생각하면 됩니다: 상시 작동 훅은 어시스턴트에게 지도를 주고, `/kb-graph` 명령은 그 지도를 정확하게 탐색하게 합니다.
 
 ## `graph.json`을 LLM과 함께 사용하기
 
@@ -149,8 +149,8 @@ curl -fsSL https://raw.githubusercontent.com/safishamsi/graphify/v3/graphify/ski
 `~/.claude/CLAUDE.md`에 추가:
 
 ```
-- **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
-When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` before doing anything else.
+- **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/kb-graph`
+When the user types `/kb-graph`, invoke the Skill tool with `skill: "graphify"` before doing anything else.
 ```
 
 </details>
@@ -158,33 +158,33 @@ When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` 
 ## 사용법
 
 ```
-/graphify                          # 현재 디렉토리에서 실행
-/graphify ./raw                    # 특정 폴더에서 실행
-/graphify ./raw --mode deep        # 더 적극적인 INFERRED 엣지 추출
-/graphify ./raw --update           # 변경된 파일만 재추출하여 기존 그래프에 병합
-/graphify ./raw --cluster-only     # 기존 그래프의 클러스터링만 재실행, 재추출 없음
-/graphify ./raw --no-viz           # HTML 건너뛰기, 보고서 + JSON만 생성
-/graphify ./raw --obsidian                          # Obsidian 볼트도 생성 (옵트인)
-/graphify ./raw --obsidian --obsidian-dir ~/vaults/myproject  # 볼트를 특정 디렉토리에 생성
+/kb-graph                          # 현재 디렉토리에서 실행
+/kb-graph ./raw                    # 특정 폴더에서 실행
+/kb-graph ./raw --mode deep        # 더 적극적인 INFERRED 엣지 추출
+/kb-graph ./raw --update           # 변경된 파일만 재추출하여 기존 그래프에 병합
+/kb-graph ./raw --cluster-only     # 기존 그래프의 클러스터링만 재실행, 재추출 없음
+/kb-graph ./raw --no-viz           # HTML 건너뛰기, 보고서 + JSON만 생성
+/kb-graph ./raw --obsidian                          # Obsidian 볼트도 생성 (옵트인)
+/kb-graph ./raw --obsidian --obsidian-dir ~/vaults/myproject  # 볼트를 특정 디렉토리에 생성
 
-/graphify add https://arxiv.org/abs/1706.03762        # 논문 가져오기, 저장, 그래프 업데이트
-/graphify add https://x.com/karpathy/status/...       # 트윗 가져오기
-/graphify add https://... --author "Name"             # 원저자 태그
-/graphify add https://... --contributor "Name"        # 코퍼스에 추가한 사람 태그
+/kb-graph add https://arxiv.org/abs/1706.03762        # 논문 가져오기, 저장, 그래프 업데이트
+/kb-graph add https://x.com/karpathy/status/...       # 트윗 가져오기
+/kb-graph add https://... --author "Name"             # 원저자 태그
+/kb-graph add https://... --contributor "Name"        # 코퍼스에 추가한 사람 태그
 
-/graphify query "어텐션과 옵티마이저를 연결하는 것은?"
-/graphify query "어텐션과 옵티마이저를 연결하는 것은?" --dfs   # 특정 경로 추적
-/graphify query "어텐션과 옵티마이저를 연결하는 것은?" --budget 1500  # N 토큰으로 제한
-/graphify path "DigestAuth" "Response"
-/graphify explain "SwinTransformer"
+/kb-graph query "어텐션과 옵티마이저를 연결하는 것은?"
+/kb-graph query "어텐션과 옵티마이저를 연결하는 것은?" --dfs   # 특정 경로 추적
+/kb-graph query "어텐션과 옵티마이저를 연결하는 것은?" --budget 1500  # N 토큰으로 제한
+/kb-graph path "DigestAuth" "Response"
+/kb-graph explain "SwinTransformer"
 
-/graphify ./raw --watch            # 파일 변경 시 그래프 자동 동기화 (코드: 즉시, 문서: 알림)
-/graphify ./raw --wiki             # 에이전트가 크롤 가능한 위키 빌드 (index.md + 커뮤니티별 문서)
-/graphify ./raw --svg              # graph.svg 내보내기
-/graphify ./raw --graphml          # graph.graphml 내보내기 (Gephi, yEd)
-/graphify ./raw --neo4j            # Neo4j용 cypher.txt 생성
-/graphify ./raw --neo4j-push bolt://localhost:7687    # 실행 중인 Neo4j 인스턴스에 직접 푸시
-/graphify ./raw --mcp              # MCP stdio 서버 시작
+/kb-graph ./raw --watch            # 파일 변경 시 그래프 자동 동기화 (코드: 즉시, 문서: 알림)
+/kb-graph ./raw --wiki             # 에이전트가 크롤 가능한 위키 빌드 (index.md + 커뮤니티별 문서)
+/kb-graph ./raw --svg              # graph.svg 내보내기
+/kb-graph ./raw --graphml          # graph.graphml 내보내기 (Gephi, yEd)
+/kb-graph ./raw --neo4j            # Neo4j용 cypher.txt 생성
+/kb-graph ./raw --neo4j-push bolt://localhost:7687    # 실행 중인 Neo4j 인스턴스에 직접 푸시
+/kb-graph ./raw --mcp              # MCP stdio 서버 시작
 
 # git 훅 - 플랫폼 무관, 커밋 및 브랜치 전환 시 그래프 재빌드
 graphify hook install
@@ -273,7 +273,7 @@ graphify는 그래프 레이어입니다. 그 위에 [Penpax](https://safishamsi
 <details>
 <summary>기여하기</summary>
 
-**실전 예제**는 가장 신뢰를 쌓는 기여 방식입니다. 실제 코퍼스에서 `/graphify`를 실행하고, 결과를 `worked/{slug}/`에 저장하고, 그래프가 맞게 파악한 것과 틀린 것을 평가하는 솔직한 `review.md`를 작성하여 PR을 제출하세요.
+**실전 예제**는 가장 신뢰를 쌓는 기여 방식입니다. 실제 코퍼스에서 `/kb-graph`를 실행하고, 결과를 `worked/{slug}/`에 저장하고, 그래프가 맞게 파악한 것과 틀린 것을 평가하는 솔직한 `review.md`를 작성하여 PR을 제출하세요.
 
 **추출 버그** - 입력 파일, 캐시 엔트리(`graphify-out/cache/`), 그리고 누락되거나 날조된 내용과 함께 이슈를 열어주세요.
 

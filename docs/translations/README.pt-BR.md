@@ -14,14 +14,14 @@
   <a href="https://www.linkedin.com/in/safi-shamsi"><img src="https://img.shields.io/badge/LinkedIn-Safi%20Shamsi-0077B5?logo=linkedin" alt="LinkedIn"/></a>
 </p>
 
-**Uma habilidade para assistentes de código IA.** Digite `/graphify` no Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro ou Google Antigravity — ele lê seus arquivos, constrói um grafo de conhecimento e devolve a você estrutura que você não sabia que existia. Entenda uma base de código mais rapidamente. Encontre o "porquê" por trás das decisões arquiteturais.
+**Uma habilidade para assistentes de código IA.** Digite `/kb-graph` no Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro ou Google Antigravity — ele lê seus arquivos, constrói um grafo de conhecimento e devolve a você estrutura que você não sabia que existia. Entenda uma base de código mais rapidamente. Encontre o "porquê" por trás das decisões arquiteturais.
 
 Totalmente multimodal. Adicione código, PDFs, markdown, capturas de tela, diagramas, fotos de quadros brancos, imagens em outros idiomas, ou arquivos de vídeo e áudio — graphify extrai conceitos e relações de tudo isso e os conecta em um único grafo. Vídeos são transcritos localmente com Whisper usando um prompt adaptado ao domínio derivado do seu corpus. 25 linguagens de programação suportadas via tree-sitter AST (Python, JS, TS, Go, Rust, Java, C, C++, Ruby, C#, Kotlin, Scala, PHP, Swift, Lua, Zig, PowerShell, Elixir, Objective-C, Julia, Verilog, SystemVerilog, Vue, Svelte, Dart).
 
 > Andrej Karpathy mantém uma pasta `/raw` onde deposita papers, tweets, capturas de tela e notas. graphify é a resposta para esse problema — 71,5x menos tokens por consulta versus ler os arquivos brutos, persistente entre sessões, honesto sobre o que foi encontrado versus inferido.
 
 ```
-/graphify .                        # funciona em qualquer pasta — seu código, notas, papers, tudo
+/kb-graph .                        # funciona em qualquer pasta — seu código, notas, papers, tudo
 ```
 
 ```
@@ -91,7 +91,7 @@ pip install graphifyy && graphify install
 Depois abra seu assistente de código IA e digite:
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 Nota: Codex usa `$` em vez de `/` para habilidades, então digite `$graphify .`.
@@ -113,20 +113,20 @@ Após construir um grafo, execute isso uma vez no seu projeto:
 ## Uso
 
 ```
-/graphify                          # diretório atual
-/graphify ./raw                    # pasta específica
-/graphify ./raw --mode deep        # extração de arestas INFERRED mais agressiva
-/graphify ./raw --update           # re-extrair apenas arquivos modificados
-/graphify ./raw --directed         # grafo dirigido
-/graphify ./raw --cluster-only     # re-executar clustering no grafo existente
-/graphify ./raw --no-viz           # sem HTML, apenas relatório + JSON
-/graphify ./raw --obsidian         # gerar vault do Obsidian (opt-in)
+/kb-graph                          # diretório atual
+/kb-graph ./raw                    # pasta específica
+/kb-graph ./raw --mode deep        # extração de arestas INFERRED mais agressiva
+/kb-graph ./raw --update           # re-extrair apenas arquivos modificados
+/kb-graph ./raw --directed         # grafo dirigido
+/kb-graph ./raw --cluster-only     # re-executar clustering no grafo existente
+/kb-graph ./raw --no-viz           # sem HTML, apenas relatório + JSON
+/kb-graph ./raw --obsidian         # gerar vault do Obsidian (opt-in)
 
-/graphify add https://arxiv.org/abs/1706.03762   # buscar um paper
-/graphify add <video-url>                         # baixar áudio, transcrever, adicionar
-/graphify query "o que conecta Attention ao otimizador?"
-/graphify path "DigestAuth" "Response"
-/graphify explain "SwinTransformer"
+/kb-graph add https://arxiv.org/abs/1706.03762   # buscar um paper
+/kb-graph add <video-url>                         # baixar áudio, transcrever, adicionar
+/kb-graph query "o que conecta Attention ao otimizador?"
+/kb-graph path "DigestAuth" "Response"
+/kb-graph explain "SwinTransformer"
 
 graphify hook install              # instalar hooks do Git
 graphify update ./src              # re-extrair arquivos de código, sem LLM

@@ -18,7 +18,7 @@
 
 <div dir="rtl">
 
-**یک مهارت برای دستیار کدنویسی هوش مصنوعی.** `/graphify` را در Claude Code، Codex، OpenCode، Kilo Code، Cursor، Gemini CLI، GitHub Copilot CLI، VS Code Copilot Chat، Aider، Amp، OpenClaw، Factory Droid، Trae، Hermes، Kimi Code، Kiro، Pi، Devin CLI یا Google Antigravity تایپ کنید — تمام پروژه‌تان را می‌خواند، یک گراف دانش می‌سازد، و ساختاری که نمی‌دانستید وجود دارد را به شما بازمی‌گرداند. کدبیس را سریع‌تر درک کنید. «چرا»ی پشت تصمیمات معماری را کشف کنید.
+**یک مهارت برای دستیار کدنویسی هوش مصنوعی.** `/kb-graph` را در Claude Code، Codex، OpenCode، Kilo Code، Cursor، Gemini CLI، GitHub Copilot CLI، VS Code Copilot Chat، Aider، Amp، OpenClaw، Factory Droid، Trae، Hermes، Kimi Code، Kiro، Pi، Devin CLI یا Google Antigravity تایپ کنید — تمام پروژه‌تان را می‌خواند، یک گراف دانش می‌سازد، و ساختاری که نمی‌دانستید وجود دارد را به شما بازمی‌گرداند. کدبیس را سریع‌تر درک کنید. «چرا»ی پشت تصمیمات معماری را کشف کنید.
 
 کاملاً چندوجهی. کد، PDF، مارک‌داون، اسکرین‌شات، نمودار، عکس وایت‌بورد، تصاویر به زبان‌های دیگر، یا فایل‌های ویدئو و صوتی بریزید — graphify مفاهیم و روابط را از همه آن‌ها استخراج کرده و در یک گراف به هم متصل می‌کند. ویدئوها به‌صورت محلی با Whisper رونویسی می‌شوند. ۳۶ زبان برنامه‌نویسی از طریق tree-sitter AST پشتیبانی می‌شوند.
 
@@ -27,7 +27,7 @@
 </div>
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 <div dir="rtl">
@@ -132,7 +132,7 @@ graphify install
 
 <div dir="rtl">
 
-همین. دستیار هوش مصنوعی‌تان را باز کنید و `/graphify .` تایپ کنید.
+همین. دستیار هوش مصنوعی‌تان را باز کنید و `/kb-graph .` تایپ کنید.
 
 برای نصب مهارت دستیار در مخزن جاری به‌جای پروفایل کاربری، `--project` اضافه کنید:
 
@@ -145,7 +145,7 @@ graphify install --project --platform codex
 
 <div dir="rtl">
 
-> **یادداشت PowerShell:** از `graphify .` استفاده کنید نه `/graphify .` — اسلش ابتدایی در PowerShell جداکننده مسیر است.
+> **یادداشت PowerShell:** از `graphify .` استفاده کنید نه `/kb-graph .` — اسلش ابتدایی در PowerShell جداکننده مسیر است.
 
 > **`graphify: command not found`؟** از `uv tool install graphifyy` یا `pipx install graphifyy` استفاده کنید — هر دو CLI را به‌طور خودکار در PATH قرار می‌دهند.
 
@@ -273,19 +273,19 @@ graphify install --project --platform codex
 </div>
 
 ```bash
-/graphify .                        # ساخت گراف برای پوشه جاری
-/graphify ./docs --update          # فقط فایل‌های تغییریافته را مجدداً استخراج کن
-/graphify . --cluster-only         # خوشه‌بندی مجدد بدون استخراج مجدد
-/graphify . --no-viz               # فقط گزارش + JSON، بدون HTML
-/graphify . --wiki                 # ساخت ویکی مارک‌داون از گراف
+/kb-graph .                        # ساخت گراف برای پوشه جاری
+/kb-graph ./docs --update          # فقط فایل‌های تغییریافته را مجدداً استخراج کن
+/kb-graph . --cluster-only         # خوشه‌بندی مجدد بدون استخراج مجدد
+/kb-graph . --no-viz               # فقط گزارش + JSON، بدون HTML
+/kb-graph . --wiki                 # ساخت ویکی مارک‌داون از گراف
 graphify export callflow-html      # HTML معماری/جریان فراخوانی Mermaid
 
-/graphify query "چه چیزی auth را به پایگاه داده متصل می‌کند؟"
-/graphify path "UserService" "DatabasePool"
-/graphify explain "RateLimiter"
+/kb-graph query "چه چیزی auth را به پایگاه داده متصل می‌کند؟"
+/kb-graph path "UserService" "DatabasePool"
+/kb-graph explain "RateLimiter"
 
-/graphify add https://arxiv.org/abs/1706.03762   # یک مقاله را واکشی و اضافه کن
-/graphify add <youtube-url>                       # رونویسی و اضافه کردن ویدئو
+/kb-graph add https://arxiv.org/abs/1706.03762   # یک مقاله را واکشی و اضافه کن
+/kb-graph add <youtube-url>                       # رونویسی و اضافه کردن ویدئو
 
 graphify hook install              # بازسازی خودکار پس از هر commit
 graphify merge-graphs a.json b.json              # ترکیب دو گراف
@@ -341,10 +341,10 @@ graphify-out/cost.json        # فقط محلی
 <div dir="rtl">
 
 **جریان کار:**
-۱. یک نفر `/graphify .` اجرا می‌کند و `graphify-out/` را commit می‌کند.
+۱. یک نفر `/kb-graph .` اجرا می‌کند و `graphify-out/` را commit می‌کند.
 ۲. همه pull می‌کنند — دستیارشان فوراً گراف را می‌خواند.
 ۳. `graphify hook install` را اجرا کنید تا پس از هر commit به‌طور خودکار بازسازی شود.
-۴. وقتی اسناد یا مقالات تغییر کردند، `/graphify --update` اجرا کنید.
+۴. وقتی اسناد یا مقالات تغییر کردند، `/kb-graph --update` اجرا کنید.
 
 ---
 
@@ -373,7 +373,7 @@ python -m graphify.serve graphify-out/graph.json --transport http --host 0.0.0.0
 
 ## متغیرهای محیطی
 
-اینها فقط برای **استخراج بدون نمایشگر / CI** (`graphify extract`) لازم هستند. هنگام اجرا از طریق مهارت `/graphify` داخل IDE، API مدل توسط جلسه IDE شما تأمین می‌شود.
+اینها فقط برای **استخراج بدون نمایشگر / CI** (`graphify extract`) لازم هستند. هنگام اجرا از طریق مهارت `/kb-graph` داخل IDE، API مدل توسط جلسه IDE شما تأمین می‌شود.
 
 </div>
 
@@ -411,7 +411,7 @@ pip اسکریپت‌ها را در دایرکتوری bin کاربر نصب م�
 - Linux: `~/.local/bin` را به PATH در `~/.bashrc` اضافه کنید
 - یا از `uv tool install graphifyy` / `pipx install graphifyy` استفاده کنید.
 
-**`/graphify .` در PowerShell "path not recognized" نشان می‌دهد**
+**`/kb-graph .` در PowerShell "path not recognized" نشان می‌دهد**
 PowerShell `/` ابتدایی را به‌عنوان جداکننده مسیر در نظر می‌گیرد. از `graphify .` (بدون اسلش) در Windows استفاده کنید.
 
 **گراف پس از `--update` یا بازسازی گره کمتری دارد**
@@ -443,27 +443,27 @@ ANTHROPIC_API_KEY=sk-... graphify extract ./docs --backend claude
 </div>
 
 ```
-/graphify                          # اجرا روی دایرکتوری جاری
-/graphify ./raw                    # اجرا روی پوشه مشخص
-/graphify ./raw --mode deep        # استخراج رابطه‌های عمیق‌تر
-/graphify ./raw --update           # فقط فایل‌های تغییریافته را مجدداً استخراج کن
-/graphify ./raw --directed         # حفظ جهت یال‌ها
-/graphify ./raw --cluster-only     # خوشه‌بندی مجدد روی گراف موجود
-/graphify ./raw --no-viz           # بدون HTML بصری‌سازی
-/graphify ./raw --obsidian         # تولید Obsidian vault
-/graphify ./raw --wiki             # ساخت ویکی مارک‌داون قابل خزیدن برای agent
-/graphify ./raw --svg              # خروجی graph.svg
-/graphify ./raw --graphml          # خروجی برای Gephi / yEd
-/graphify ./raw --neo4j            # تولید cypher.txt برای Neo4j
-/graphify ./raw --watch            # همگام‌سازی خودکار با تغییر فایل‌ها
-/graphify ./raw --mcp              # شروع سرور MCP stdio
+/kb-graph                          # اجرا روی دایرکتوری جاری
+/kb-graph ./raw                    # اجرا روی پوشه مشخص
+/kb-graph ./raw --mode deep        # استخراج رابطه‌های عمیق‌تر
+/kb-graph ./raw --update           # فقط فایل‌های تغییریافته را مجدداً استخراج کن
+/kb-graph ./raw --directed         # حفظ جهت یال‌ها
+/kb-graph ./raw --cluster-only     # خوشه‌بندی مجدد روی گراف موجود
+/kb-graph ./raw --no-viz           # بدون HTML بصری‌سازی
+/kb-graph ./raw --obsidian         # تولید Obsidian vault
+/kb-graph ./raw --wiki             # ساخت ویکی مارک‌داون قابل خزیدن برای agent
+/kb-graph ./raw --svg              # خروجی graph.svg
+/kb-graph ./raw --graphml          # خروجی برای Gephi / yEd
+/kb-graph ./raw --neo4j            # تولید cypher.txt برای Neo4j
+/kb-graph ./raw --watch            # همگام‌سازی خودکار با تغییر فایل‌ها
+/kb-graph ./raw --mcp              # شروع سرور MCP stdio
 
-/graphify add https://arxiv.org/abs/1706.03762
-/graphify add <video-url>
+/kb-graph add https://arxiv.org/abs/1706.03762
+/kb-graph add <video-url>
 
-/graphify query "چه چیزی attention را به optimizer متصل می‌کند؟"
-/graphify path "DigestAuth" "Response"
-/graphify explain "SwinTransformer"
+/kb-graph query "چه چیزی attention را به optimizer متصل می‌کند؟"
+/kb-graph path "DigestAuth" "Response"
+/kb-graph explain "SwinTransformer"
 
 graphify uninstall                 # حذف از همه پلتفرم‌ها
 graphify uninstall --purge         # همچنین graphify-out/ را حذف کن
@@ -561,7 +561,7 @@ uv run pytest tests/test_extract.py -q # یک ماژول
 
 ### چه چیزی مشارکت کنیم
 
-**نمونه‌های کاری** مفیدترین نوع مشارکت هستند. `/graphify` را روی یک corpus واقعی اجرا کنید، خروجی را در `worked/{slug}/` ذخیره کنید، یک `review.md` صادقانه بنویسید که چه چیزهایی درست و نادرست بوده، و یک PR باز کنید.
+**نمونه‌های کاری** مفیدترین نوع مشارکت هستند. `/kb-graph` را روی یک corpus واقعی اجرا کنید، خروجی را در `worked/{slug}/` ذخیره کنید، یک `review.md` صادقانه بنویسید که چه چیزهایی درست و نادرست بوده، و یک PR باز کنید.
 
 **باگ‌های استخراج** — یک issue با فایل ورودی، آیتم کش (`graphify-out/cache/`) و آنچه اشتباه یا حذف شده باز کنید.
 

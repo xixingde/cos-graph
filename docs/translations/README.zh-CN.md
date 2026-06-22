@@ -5,14 +5,14 @@
 [![CI](https://github.com/safishamsi/graphify/actions/workflows/ci.yml/badge.svg?branch=v3)](https://github.com/safishamsi/graphify/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/graphifyy)](https://pypi.org/project/graphifyy/)
 
-**一个面向 AI 编码助手的技能。** 在 Claude Code、CodeBuddy、Codex、OpenCode、OpenClaw、Factory Droid 或 Trae 中输入 `/graphify`，它会读取你的文件、构建知识图谱，并把原本不明显的结构关系还给你。更快理解代码库，找到架构决策背后的"为什么"。
+**一个面向 AI 编码助手的技能。** 在 Claude Code、CodeBuddy、Codex、OpenCode、OpenClaw、Factory Droid 或 Trae 中输入 `/kb-graph`，它会读取你的文件、构建知识图谱，并把原本不明显的结构关系还给你。更快理解代码库，找到架构决策背后的"为什么"。
 
 完全多模态。你可以直接丢进去代码、PDF、Markdown、截图、流程图、白板照片，甚至其他语言的图片 —— graphify 会用 Claude vision 从这些内容中提取概念和关系，并把它们连接到同一张图里。
 
 > Andrej Karpathy 会维护一个 `/raw` 文件夹，把论文、推文、截图和笔记都丢进去。graphify 就是在解决这类问题 —— 相比直接读取原始文件，每次查询的 token 消耗可降低 **71.5 倍**，结果还能跨会话持久保存，并且会明确区分哪些内容是实际发现的，哪些只是合理推断。
 
 ```
-/graphify .                        # 可用于任意目录：代码库、笔记、论文都可以
+/kb-graph .                        # 可用于任意目录：代码库、笔记、论文都可以
 ```
 
 ```
@@ -59,7 +59,7 @@ Codex 用户还需要在 `~/.codex/config.toml` 的 `[features]` 下打开 `mult
 然后打开你的 AI 编码助手，输入：
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 ### 让助手始终优先使用图谱（推荐）
@@ -93,9 +93,9 @@ Codex 用户还需要在 `~/.codex/config.toml` 的 `[features]` 下打开 `mult
 
 常驻 hook 会优先暴露 `GRAPH_REPORT.md` —— 这是一页式总结，包含 god nodes、社区结构和意外连接。你的助手在搜索文件前会先读它，因此会按结构导航，而不是按关键字乱搜。这已经能覆盖大部分日常问题。
 
-`/graphify query`、`/graphify path` 和 `/graphify explain` 会更深入：它们会逐跳遍历底层 `graph.json`，追踪节点之间的精确路径，并展示边级别细节（关系类型、置信度、源位置）。当你想从图谱里精确回答某个问题，而不仅仅是获得整体感知时，就该用这些命令。
+`/kb-graph query`、`/kb-graph path` 和 `/kb-graph explain` 会更深入：它们会逐跳遍历底层 `graph.json`，追踪节点之间的精确路径，并展示边级别细节（关系类型、置信度、源位置）。当你想从图谱里精确回答某个问题，而不仅仅是获得整体感知时，就该用这些命令。
 
-可以这样理解：常驻 hook 是先给助手一张地图，`/graphify` 这几个命令则是让它沿着地图精确导航。
+可以这样理解：常驻 hook 是先给助手一张地图，`/kb-graph` 这几个命令则是让它沿着地图精确导航。
 
 <details>
 <summary>手动安装（curl）</summary>
@@ -109,8 +109,8 @@ curl -fsSL https://raw.githubusercontent.com/safishamsi/graphify/v3/graphify/ski
 把下面内容加到 `~/.claude/CLAUDE.md`：
 
 ```
-- **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
-When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` before doing anything else.
+- **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/kb-graph`
+When the user types `/kb-graph`, invoke the Skill tool with `skill: "graphify"` before doing anything else.
 ```
 
 </details>
@@ -118,32 +118,32 @@ When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` 
 ## 用法
 
 ```
-/graphify                          # 对当前目录运行
-/graphify ./raw                    # 对指定目录运行
-/graphify ./raw --mode deep        # 更激进地抽取 INFERRED 边
-/graphify ./raw --update           # 只重新提取变更文件，并合并到已有图谱
-/graphify ./raw --cluster-only     # 只重新聚类已有图谱，不重新提取
-/graphify ./raw --no-viz           # 跳过 HTML，只生成 report + JSON
-/graphify ./raw --obsidian         # 额外生成 Obsidian vault（可选）
+/kb-graph                          # 对当前目录运行
+/kb-graph ./raw                    # 对指定目录运行
+/kb-graph ./raw --mode deep        # 更激进地抽取 INFERRED 边
+/kb-graph ./raw --update           # 只重新提取变更文件，并合并到已有图谱
+/kb-graph ./raw --cluster-only     # 只重新聚类已有图谱，不重新提取
+/kb-graph ./raw --no-viz           # 跳过 HTML，只生成 report + JSON
+/kb-graph ./raw --obsidian         # 额外生成 Obsidian vault（可选）
 
-/graphify add https://arxiv.org/abs/1706.03762        # 拉取论文、保存并更新图谱
-/graphify add https://x.com/karpathy/status/...       # 拉取推文
-/graphify add https://... --author "Name"             # 标记原作者
-/graphify add https://... --contributor "Name"        # 标记是谁把它加入语料库的
+/kb-graph add https://arxiv.org/abs/1706.03762        # 拉取论文、保存并更新图谱
+/kb-graph add https://x.com/karpathy/status/...       # 拉取推文
+/kb-graph add https://... --author "Name"             # 标记原作者
+/kb-graph add https://... --contributor "Name"        # 标记是谁把它加入语料库的
 
-/graphify query "what connects attention to the optimizer?"
-/graphify query "what connects attention to the optimizer?" --dfs   # 追踪一条具体路径
-/graphify query "what connects attention to the optimizer?" --budget 1500  # 把预算限制在 N tokens
-/graphify path "DigestAuth" "Response"
-/graphify explain "SwinTransformer"
+/kb-graph query "what connects attention to the optimizer?"
+/kb-graph query "what connects attention to the optimizer?" --dfs   # 追踪一条具体路径
+/kb-graph query "what connects attention to the optimizer?" --budget 1500  # 把预算限制在 N tokens
+/kb-graph path "DigestAuth" "Response"
+/kb-graph explain "SwinTransformer"
 
-/graphify ./raw --watch            # 文件变更时自动同步图谱（代码：立即更新；文档：提醒你）
-/graphify ./raw --wiki             # 构建可供 agent 抓取的 wiki（index.md + 每个 community 一篇文章）
-/graphify ./raw --svg              # 导出 graph.svg
-/graphify ./raw --graphml          # 导出 graph.graphml（Gephi、yEd）
-/graphify ./raw --neo4j            # 生成给 Neo4j 用的 cypher.txt
-/graphify ./raw --neo4j-push bolt://localhost:7687    # 直接推送到运行中的 Neo4j
-/graphify ./raw --mcp              # 启动 MCP stdio server
+/kb-graph ./raw --watch            # 文件变更时自动同步图谱（代码：立即更新；文档：提醒你）
+/kb-graph ./raw --wiki             # 构建可供 agent 抓取的 wiki（index.md + 每个 community 一篇文章）
+/kb-graph ./raw --svg              # 导出 graph.svg
+/kb-graph ./raw --graphml          # 导出 graph.graphml（Gephi、yEd）
+/kb-graph ./raw --neo4j            # 生成给 Neo4j 用的 cypher.txt
+/kb-graph ./raw --neo4j-push bolt://localhost:7687    # 直接推送到运行中的 Neo4j
+/kb-graph ./raw --mcp              # 启动 MCP stdio server
 
 # git hooks - 跨平台，在 commit 和切分支后重建图谱
 graphify hook install
@@ -217,7 +217,7 @@ NetworkX + Leiden（graspologic）+ tree-sitter + vis.js。语义提取由 Claud
 <details>
 <summary>贡献</summary>
 
-**Worked examples** 是最能建立信任的贡献方式。对一个真实语料跑 `/graphify`，把输出保存到 `worked/{slug}/`，再写一份诚实的 `review.md`，评价图谱哪些地方做得对、哪些地方做得不对，然后提交 PR。
+**Worked examples** 是最能建立信任的贡献方式。对一个真实语料跑 `/kb-graph`，把输出保存到 `worked/{slug}/`，再写一份诚实的 `review.md`，评价图谱哪些地方做得对、哪些地方做得不对，然后提交 PR。
 
 **提取 bug** —— 提 issue 时请附上输入文件、对应的缓存项（`graphify-out/cache/`）以及它漏提取或瞎编了什么。
 

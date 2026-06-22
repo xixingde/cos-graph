@@ -15,7 +15,7 @@ LOCAL_PATH=$(graphify clone <github-url> [--branch <branch>])
 # Clone each repo, run the full pipeline on each, then merge
 graphify clone <url1>   # → ~/.graphify/repos/<owner1>/<repo1>
 graphify clone <url2>   # → ~/.graphify/repos/<owner2>/<repo2>
-# Run /graphify on each local path to produce their graph.json files
+# Run /kb-graph on each local path to produce their graph.json files
 # Then merge:
 graphify merge-graphs \
   ~/.graphify/repos/<owner1>/<repo1>/graphify-out/graph.json \

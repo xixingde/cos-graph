@@ -13,14 +13,14 @@
   <a href="https://github.com/sponsors/safishamsi"><img src="https://img.shields.io/badge/sponsor-safishamsi-ea4aaa?logo=github-sponsors" alt="Sponsor"/></a>
 </p>
 
-**Μια δεξιότητα για βοηθούς κώδικα AI.** Πληκτρολογήστε `/graphify` στο Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro ή Google Antigravity — διαβάζει τα αρχεία σας, δημιουργεί ένα γράφο γνώσης και σας επιστρέφει δομή που δεν ξέρατε ότι υπήρχε. Κατανοήστε μια βάση κώδικα γρηγορότερα. Βρείτε το «γιατί» πίσω από αρχιτεκτονικές αποφάσεις.
+**Μια δεξιότητα για βοηθούς κώδικα AI.** Πληκτρολογήστε `/kb-graph` στο Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro ή Google Antigravity — διαβάζει τα αρχεία σας, δημιουργεί ένα γράφο γνώσης και σας επιστρέφει δομή που δεν ξέρατε ότι υπήρχε. Κατανοήστε μια βάση κώδικα γρηγορότερα. Βρείτε το «γιατί» πίσω από αρχιτεκτονικές αποφάσεις.
 
 Πλήρως πολυτροπικό. Προσθέστε κώδικα, PDF, markdown, στιγμιότυπα οθόνης, διαγράμματα, φωτογραφίες πίνακα, εικόνες σε άλλες γλώσσες ή αρχεία βίντεο και ήχου — το graphify εξάγει έννοιες και σχέσεις από όλα και τα συνδέει σε ένα ενιαίο γράφο. Τα βίντεο μεταγράφονται τοπικά με το Whisper. Υποστηρίζει 25 γλώσσες προγραμματισμού μέσω tree-sitter AST.
 
 > Ο Andrej Karpathy διατηρεί ένα φάκελο `/raw` όπου αποθηκεύει εργασίες, tweets, στιγμιότυπα και σημειώσεις. Το graphify είναι η απάντηση σε αυτό το πρόβλημα — **71,5x** λιγότερα token ανά ερώτημα σε σύγκριση με την ανάγνωση αρχείων, επίμονο μεταξύ συνεδριών.
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 ```
@@ -54,10 +54,10 @@ pip install graphifyy && graphify install
 ## Χρήση
 
 ```
-/graphify .
-/graphify ./raw --update
-/graphify query "τι συνδέει το Attention με τον optimizer;"
-/graphify path "DigestAuth" "Response"
+/kb-graph .
+/kb-graph ./raw --update
+/kb-graph query "τι συνδέει το Attention με τον optimizer;"
+/kb-graph path "DigestAuth" "Response"
 graphify hook install
 graphify update ./src
 ```

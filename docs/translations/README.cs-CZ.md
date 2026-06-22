@@ -13,14 +13,14 @@
   <a href="https://github.com/sponsors/safishamsi"><img src="https://img.shields.io/badge/sponsor-safishamsi-ea4aaa?logo=github-sponsors" alt="Sponsor"/></a>
 </p>
 
-**Dovednost pro asistenty kódování AI.** Napište `/graphify` v Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro nebo Google Antigravity — přečte vaše soubory, vytvoří znalostní graf a vrátí vám strukturu, o které jste nevěděli, že existuje. Pochopte kódovou základnu rychleji. Najděte „proč" za architektonickými rozhodnutími.
+**Dovednost pro asistenty kódování AI.** Napište `/kb-graph` v Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro nebo Google Antigravity — přečte vaše soubory, vytvoří znalostní graf a vrátí vám strukturu, o které jste nevěděli, že existuje. Pochopte kódovou základnu rychleji. Najděte „proč" za architektonickými rozhodnutími.
 
 Plně multimodální. Přidejte kód, PDF, markdown, snímky obrazovky, diagramy, fotografie tabule, obrázky v jiných jazycích nebo video a zvukové soubory — graphify extrahuje koncepty a vztahy ze všeho a spojuje je do jediného grafu. Videa jsou přepisována lokálně pomocí Whisper. Podporuje 25 programovacích jazyků prostřednictvím tree-sitter AST.
 
 > Andrej Karpathy udržuje složku `/raw`, kde ukládá články, tweety, snímky obrazovky a poznámky. graphify je odpovědí na tento problém — **71,5x** méně tokenů na dotaz ve srovnání se čtením surových souborů, přetrvávající mezi sezeními.
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 ```
@@ -54,10 +54,10 @@ pip install graphifyy && graphify install
 ## Použití
 
 ```
-/graphify .
-/graphify ./raw --update
-/graphify query "co spojuje Attention s optimizerem?"
-/graphify path "DigestAuth" "Response"
+/kb-graph .
+/kb-graph ./raw --update
+/kb-graph query "co spojuje Attention s optimizerem?"
+/kb-graph path "DigestAuth" "Response"
 graphify hook install
 graphify update ./src
 ```

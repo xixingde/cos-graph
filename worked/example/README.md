@@ -31,7 +31,7 @@ graphify install --platform claw        # OpenClaw
 Then open your AI coding assistant in this directory and type:
 
 ```
-/graphify ./raw
+/kb-graph ./raw
 ```
 
 No PDF or image extraction — runs entirely on AST and markdown with no token cost for semantic extraction.

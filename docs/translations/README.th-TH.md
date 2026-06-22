@@ -13,14 +13,14 @@
   <a href="https://github.com/sponsors/safishamsi"><img src="https://img.shields.io/badge/sponsor-safishamsi-ea4aaa?logo=github-sponsors" alt="Sponsor"/></a>
 </p>
 
-**ทักษะสำหรับผู้ช่วยเขียนโค้ด AI** พิมพ์ `/graphify` ใน Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro หรือ Google Antigravity — มันจะอ่านไฟล์ของคุณ สร้างกราฟความรู้ และส่งคืนโครงสร้างที่คุณไม่รู้ว่ามีอยู่ ทำความเข้าใจ codebase ได้เร็วขึ้น ค้นหา "ทำไม" เบื้องหลังการตัดสินใจด้านสถาปัตยกรรม
+**ทักษะสำหรับผู้ช่วยเขียนโค้ด AI** พิมพ์ `/kb-graph` ใน Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro หรือ Google Antigravity — มันจะอ่านไฟล์ของคุณ สร้างกราฟความรู้ และส่งคืนโครงสร้างที่คุณไม่รู้ว่ามีอยู่ ทำความเข้าใจ codebase ได้เร็วขึ้น ค้นหา "ทำไม" เบื้องหลังการตัดสินใจด้านสถาปัตยกรรม
 
 มัลติโมดัลอย่างสมบูรณ์ เพิ่มโค้ด, PDF, markdown, ภาพหน้าจอ, ไดอะแกรม, ภาพถ่ายกระดานไวท์บอร์ด, รูปภาพในภาษาอื่น หรือไฟล์วิดีโอและเสียง — graphify ดึงแนวคิดและความสัมพันธ์จากทุกอย่างและเชื่อมต่อกันในกราฟเดียว วิดีโอถูกถอดเสียงในเครื่องด้วย Whisper รองรับ 25 ภาษาการเขียนโปรแกรมผ่าน tree-sitter AST
 
 > Andrej Karpathy รักษาโฟลเดอร์ `/raw` ที่เขาวางงานวิจัย, ทวีต, ภาพหน้าจอ และบันทึก graphify คือคำตอบสำหรับปัญหานั้น — **71.5 เท่า** โทเค็นน้อยลงต่อการสืบค้นเมื่อเทียบกับการอ่านไฟล์ดิบ, ยั่งยืนระหว่างเซสชัน
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 ```
@@ -54,10 +54,10 @@ pip install graphifyy && graphify install
 ## การใช้งาน
 
 ```
-/graphify .
-/graphify ./raw --update
-/graphify query "อะไรเชื่อม Attention กับ optimizer?"
-/graphify path "DigestAuth" "Response"
+/kb-graph .
+/kb-graph ./raw --update
+/kb-graph query "อะไรเชื่อม Attention กับ optimizer?"
+/kb-graph path "DigestAuth" "Response"
 graphify hook install
 graphify update ./src
 ```

@@ -23,12 +23,12 @@
   </a>
 </p>
 
-Type `/graphify` in your AI coding assistant and it maps your entire project — code, docs, PDFs, images, videos — into a knowledge graph you can query instead of grepping through files.
+Type `/kb-graph` in your AI coding assistant and it maps your entire project — code, docs, PDFs, images, videos — into a knowledge graph you can query instead of grepping through files.
 
 Works in Claude Code, Codex, OpenCode, Kilo Code, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, Amp, OpenClaw, Factory Droid, Trae, Hermes, Kimi Code, Kiro, Pi, Devin CLI, and Google Antigravity.
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 That's it. You get three files:
@@ -96,7 +96,7 @@ pip install graphifyy  # may need PATH setup — see note below
 graphify install
 ```
 
-That's it. Open your AI assistant and type `/graphify .`
+That's it. Open your AI assistant and type `/kb-graph .`
 
 To install the assistant skill into the current repository instead of your user
 profile, add `--project`:
@@ -113,7 +113,7 @@ print a `git add` hint for files that can be committed.
 Per-platform commands that support project-scoped installs accept the same flag,
 for example `graphify claude install --project` or `graphify codex install --project`.
 
-> **PowerShell note:** Use `graphify .` not `/graphify .` — the leading slash is a path separator in PowerShell.
+> **PowerShell note:** Use `graphify .` not `/kb-graph .` — the leading slash is a path separator in PowerShell.
 
 > **`graphify: command not found`?** Use `uv tool install graphifyy` or `pipx install graphifyy` — both put the CLI on PATH automatically. With plain `pip`, add `~/.local/bin` (Linux) or `~/Library/Python/3.x/bin` (Mac) to your PATH, or run `python -m graphify`.
 
@@ -150,7 +150,7 @@ for example `graphify claude install --project` or `graphify codex install --pro
 
 Codex users also need `multi_agent = true` under `[features]` in `~/.codex/config.toml` for parallel extraction. CodeBuddy uses the same Agent tool and PreToolUse hook mechanism as Claude Code. Factory Droid uses the `Task` tool for parallel subagent dispatch. OpenClaw and Aider use sequential extraction (parallel agent support is still early on those platforms). Trae uses the Agent tool for parallel subagent dispatch and does **not** support PreToolUse hooks — AGENTS.md is the always-on mechanism.
 
-> Codex uses `$graphify` instead of `/graphify`.
+> Codex uses `$graphify` instead of `/kb-graph`.
 
 ### Optional extras
 
@@ -220,7 +220,7 @@ To remove graphify from all platforms at once: `graphify uninstall` (add `--purg
 
 ---
 
-**Kilo Code** installs the Graphify skill to `~/.config/kilo/skills/graphify/SKILL.md` and a native `/graphify` command to `~/.config/kilo/command/graphify.md`. `graphify kilo install` also writes `AGENTS.md` plus a native **`tool.execute.before` plugin** (`.kilo/plugins/graphify.js` + `.kilo/kilo.json` or `.kilo/kilo.jsonc` registration) so Kilo gets the same always-on graph reminder behavior through native `.kilo` config.
+**Kilo Code** installs the Graphify skill to `~/.config/kilo/skills/graphify/SKILL.md` and a native `/kb-graph` command to `~/.config/kilo/command/kb-graph.md`. `graphify kilo install` also writes `AGENTS.md` plus a native **`tool.execute.before` plugin** (`.kilo/plugins/graphify.js` + `.kilo/kilo.json` or `.kilo/kilo.jsonc` registration) so Kilo gets the same always-on graph reminder behavior through native `.kilo` config.
 
 **Cursor** writes `.cursor/rules/graphify.mdc` with `alwaysApply: true` — Cursor includes it in every conversation automatically, no hook needed.
 
@@ -271,21 +271,21 @@ You can also set `GRAPHIFY_GOOGLE_WORKSPACE=1`. Graphify exports shortcuts into
 ## Common commands
 
 ```bash
-/graphify .                        # build graph for current folder
-/graphify ./docs --update          # re-extract only changed files
-/graphify . --cluster-only         # rerun clustering without re-extracting
-/graphify . --cluster-only --resolution 1.5      # more granular communities
-/graphify . --cluster-only --exclude-hubs 99     # suppress utility super-hubs from god-node rankings
-/graphify . --no-viz               # skip the HTML, just the report + JSON
-/graphify . --wiki                 # build a markdown wiki from the graph
+/kb-graph .                        # build graph for current folder
+/kb-graph ./docs --update          # re-extract only changed files
+/kb-graph . --cluster-only         # rerun clustering without re-extracting
+/kb-graph . --cluster-only --resolution 1.5      # more granular communities
+/kb-graph . --cluster-only --exclude-hubs 99     # suppress utility super-hubs from god-node rankings
+/kb-graph . --no-viz               # skip the HTML, just the report + JSON
+/kb-graph . --wiki                 # build a markdown wiki from the graph
 graphify export callflow-html      # Mermaid architecture/call-flow HTML (auto-regenerates on every git commit if hook is installed)
 
-/graphify query "what connects auth to the database?"
-/graphify path "UserService" "DatabasePool"
-/graphify explain "RateLimiter"
+/kb-graph query "what connects auth to the database?"
+/kb-graph path "UserService" "DatabasePool"
+/kb-graph explain "RateLimiter"
 
-/graphify add https://arxiv.org/abs/1706.03762   # fetch a paper and add it
-/graphify add <youtube-url>                       # transcribe and add a video
+/kb-graph add https://arxiv.org/abs/1706.03762   # fetch a paper and add it
+/kb-graph add <youtube-url>                       # transcribe and add a video
 
 graphify hook install              # auto-rebuild on git commit
 graphify merge-graphs a.json b.json              # combine two graphs
@@ -333,10 +333,10 @@ graphify-out/cost.json        # local only
 > `manifest.json` is now portable — keys are stored as relative paths and re-anchored on load, so committing it is safe and avoids a full rebuild on first checkout.
 
 **Workflow:**
-1. One person runs `/graphify .` and commits `graphify-out/`.
+1. One person runs `/kb-graph .` and commits `graphify-out/`.
 2. Everyone pulls — their assistant reads the graph immediately.
 3. Run `graphify hook install` to auto-rebuild after each commit (AST only, no API cost). This also sets up a git merge driver so `graph.json` is never left with conflict markers — two devs committing in parallel get their graphs union-merged automatically.
-4. When docs or papers change, run `/graphify --update` to refresh those nodes.
+4. When docs or papers change, run `/kb-graph --update` to refresh those nodes.
 
 ---
 
@@ -393,7 +393,7 @@ docker run -p 8080:8080 -v "$(pwd)/graphify-out:/data" graphify \
 
 ## Environment variables
 
-These are only needed for **headless / CI extraction** (`graphify extract`). When running via the `/graphify` skill inside your IDE, the model API is provided by your IDE session — no extra keys needed.
+These are only needed for **headless / CI extraction** (`graphify extract`). When running via the `/kb-graph` skill inside your IDE, the model API is provided by your IDE session — no extra keys needed.
 
 | Variable | Used for | When required |
 |---|---|---|
@@ -434,7 +434,7 @@ These are only needed for **headless / CI extraction** (`graphify extract`). Whe
 
 - **Code files** — processed locally via tree-sitter. Nothing leaves your machine. A code-only corpus requires no API key — `graphify extract` runs fully offline.
 - **Video / audio** — transcribed locally with faster-whisper. Nothing leaves your machine.
-- **Docs, PDFs, images** — sent to your AI assistant for semantic extraction (via the `/graphify` skill, using whatever model your IDE session runs). Headless `graphify extract` requires `GEMINI_API_KEY` / `GOOGLE_API_KEY` (Gemini), `MOONSHOT_API_KEY` (Kimi), `ANTHROPIC_API_KEY` (Claude), `OPENAI_API_KEY` (OpenAI), `DEEPSEEK_API_KEY` (DeepSeek), a running Ollama instance (`OLLAMA_BASE_URL`), AWS credentials via the standard provider chain (Bedrock - no API key needed, uses IAM), or the `claude` CLI binary (Claude Code - no API key needed, uses your Claude subscription). The `--dedup-llm` flag uses the same key.
+- **Docs, PDFs, images** — sent to your AI assistant for semantic extraction (via the `/kb-graph` skill, using whatever model your IDE session runs). Headless `graphify extract` requires `GEMINI_API_KEY` / `GOOGLE_API_KEY` (Gemini), `MOONSHOT_API_KEY` (Kimi), `ANTHROPIC_API_KEY` (Claude), `OPENAI_API_KEY` (OpenAI), `DEEPSEEK_API_KEY` (DeepSeek), a running Ollama instance (`OLLAMA_BASE_URL`), AWS credentials via the standard provider chain (Bedrock - no API key needed, uses IAM), or the `claude` CLI binary (Claude Code - no API key needed, uses your Claude subscription). The `--dedup-llm` flag uses the same key.
 - **Data residency** — `graphify extract` auto-detects which provider to use based on which API key is set (priority: Gemini → Kimi → Claude → OpenAI → DeepSeek → Azure → Bedrock → Ollama). For code with data-residency requirements, use `--backend ollama` (fully local) or pass an explicit `--backend` flag. Kimi (`MOONSHOT_API_KEY`) routes to Moonshot AI servers in China.
 - No telemetry, no usage tracking, no analytics.
 - **Query logging** — every `graphify query`, `graphify path`, `graphify explain`, and MCP `query_graph` call is logged to `~/.cache/graphify-queries.log` in JSON Lines format (timestamp, question, corpus, nodes returned, duration). Full subgraph responses are **not** stored by default. Set `GRAPHIFY_QUERY_LOG_DISABLE=1` to opt out, or `GRAPHIFY_QUERY_LOG=/dev/null` to silence without disabling the code path.
@@ -452,7 +452,7 @@ pip installs scripts to a user bin directory that may not be on your PATH. Fix:
 **`python -m graphify` works but `graphify` command doesn't**
 Your shell's PATH doesn't include the Python scripts directory. Use `uv` or `pipx` instead of plain `pip`.
 
-**`/graphify .` causes "path not recognized" in PowerShell**
+**`/kb-graph .` causes "path not recognized" in PowerShell**
 PowerShell treats a leading `/` as a path separator. Use `graphify .` (no slash) on Windows.
 
 **Graph has fewer nodes after `--update` or rebuild**
@@ -506,32 +506,32 @@ graphify install  # overwrites the skill file
 ## Full command reference
 
 ```
-/graphify                          # run on current directory
-/graphify ./raw                    # run on a specific folder
-/graphify ./raw --mode deep        # more aggressive relationship extraction
-/graphify ./raw --update           # re-extract only changed files
-/graphify ./raw --directed         # preserve edge direction
-/graphify ./raw --cluster-only     # rerun clustering on existing graph
-/graphify ./raw --no-viz           # skip HTML visualization
-/graphify ./raw --obsidian         # generate Obsidian vault
-/graphify ./raw --wiki             # build agent-crawlable markdown wiki
-/graphify ./raw --svg              # export graph.svg
-/graphify ./raw --graphml          # export for Gephi / yEd
-/graphify ./raw --neo4j            # generate cypher.txt for Neo4j
-/graphify ./raw --neo4j-push bolt://localhost:7687
-/graphify ./raw --falkordb         # generate cypher.txt for FalkorDB
-/graphify ./raw --falkordb-push falkordb://localhost:6379
-/graphify ./raw --watch            # auto-sync as files change
-/graphify ./raw --mcp              # start MCP stdio server
+/kb-graph                          # run on current directory
+/kb-graph ./raw                    # run on a specific folder
+/kb-graph ./raw --mode deep        # more aggressive relationship extraction
+/kb-graph ./raw --update           # re-extract only changed files
+/kb-graph ./raw --directed         # preserve edge direction
+/kb-graph ./raw --cluster-only     # rerun clustering on existing graph
+/kb-graph ./raw --no-viz           # skip HTML visualization
+/kb-graph ./raw --obsidian         # generate Obsidian vault
+/kb-graph ./raw --wiki             # build agent-crawlable markdown wiki
+/kb-graph ./raw --svg              # export graph.svg
+/kb-graph ./raw --graphml          # export for Gephi / yEd
+/kb-graph ./raw --neo4j            # generate cypher.txt for Neo4j
+/kb-graph ./raw --neo4j-push bolt://localhost:7687
+/kb-graph ./raw --falkordb         # generate cypher.txt for FalkorDB
+/kb-graph ./raw --falkordb-push falkordb://localhost:6379
+/kb-graph ./raw --watch            # auto-sync as files change
+/kb-graph ./raw --mcp              # start MCP stdio server
 
-/graphify add https://arxiv.org/abs/1706.03762
-/graphify add <video-url>
-/graphify add https://... --author "Name" --contributor "Name"
+/kb-graph add https://arxiv.org/abs/1706.03762
+/kb-graph add <video-url>
+/kb-graph add https://... --author "Name" --contributor "Name"
 
-/graphify query "what connects attention to the optimizer?"
-/graphify query "..." --dfs --budget 1500
-/graphify path "DigestAuth" "Response"
-/graphify explain "SwinTransformer"
+/kb-graph query "what connects attention to the optimizer?"
+/kb-graph query "..." --dfs --budget 1500
+/kb-graph path "DigestAuth" "Response"
+/kb-graph explain "SwinTransformer"
 
 graphify uninstall                 # remove from all platforms in one shot
 graphify uninstall --purge         # also delete graphify-out/
@@ -548,7 +548,7 @@ graphify codebuddy install         # CODEBUDDY.md + PreToolUse hook (CodeBuddy)
 graphify codebuddy uninstall
 graphify codex install             # AGENTS.md + PreToolUse hook in .codex/hooks.json (Codex)
 graphify opencode install          # AGENTS.md + tool.execute.before plugin (OpenCode)
-graphify kilo install              # native Kilo skill + /graphify command + AGENTS.md + .kilo plugin
+graphify kilo install              # native Kilo skill + /kb-graph command + AGENTS.md + .kilo plugin
 graphify kilo uninstall
 graphify cursor install            # .cursor/rules/graphify.mdc (Cursor)
 graphify cursor uninstall
@@ -707,7 +707,7 @@ uv run pytest tests/ -q -k "python"    # filter by name
 
 ### What to contribute
 
-**Worked examples** are the most useful contribution. Run `/graphify` on a real corpus, save the output to `worked/{slug}/`, write an honest `review.md` covering what the graph got right and wrong, and open a PR.
+**Worked examples** are the most useful contribution. Run `/kb-graph` on a real corpus, save the output to `worked/{slug}/`, write an honest `review.md` covering what the graph got right and wrong, and open a PR.
 
 **Extraction bugs** — open an issue with the input file, the cache entry (`graphify-out/cache/`), and what was missed or wrong.
 

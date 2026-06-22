@@ -16,7 +16,7 @@
 
 <div dir="rtl">
 
-**مهارة لمساعد برمجة الذكاء الاصطناعي.** اكتب `/graphify` في Claude Code أو Codex أو OpenCode أو Cursor أو Gemini CLI أو GitHub Copilot CLI أو VS Code Copilot Chat أو Aider أو OpenClaw أو Factory Droid أو Trae أو Hermes أو Kiro أو Google Antigravity — يقرأ ملفاتك ويبني رسماً بيانياً للمعرفة ويعيد إليك البنية التي لم تكن تعلم بوجودها. افهم قاعدة الكود بشكل أسرع. اكتشف "السبب" وراء القرارات المعمارية.
+**مهارة لمساعد برمجة الذكاء الاصطناعي.** اكتب `/kb-graph` في Claude Code أو Codex أو OpenCode أو Cursor أو Gemini CLI أو GitHub Copilot CLI أو VS Code Copilot Chat أو Aider أو OpenClaw أو Factory Droid أو Trae أو Hermes أو Kiro أو Google Antigravity — يقرأ ملفاتك ويبني رسماً بيانياً للمعرفة ويعيد إليك البنية التي لم تكن تعلم بوجودها. افهم قاعدة الكود بشكل أسرع. اكتشف "السبب" وراء القرارات المعمارية.
 
 متعدد الوسائط بالكامل. أضف كوداً أو ملفات PDF أو markdown أو لقطات شاشة أو رسوماً بيانية أو صور سبورة أو صوراً بلغات أخرى أو ملفات فيديو وصوت — يستخرج graphify المفاهيم والعلاقات من كل ذلك ويربطها في رسم بياني واحد. يتم نسخ مقاطع الفيديو محلياً باستخدام Whisper. يدعم 25 لغة برمجة عبر tree-sitter AST (Python, JS, TS, Go, Rust, Java, C, C++, Ruby, C#, Kotlin, Scala, PHP, Swift, Lua, Zig, PowerShell, Elixir, Objective-C, Julia, Verilog, SystemVerilog, Vue, Svelte, Dart).
 
@@ -25,7 +25,7 @@
 </div>
 
 ```
-/graphify .                        # يعمل مع أي مجلد — الكود، الملاحظات، الأوراق البحثية، كل شيء
+/kb-graph .                        # يعمل مع أي مجلد — الكود، الملاحظات، الأوراق البحثية، كل شيء
 ```
 
 ```
@@ -106,7 +106,7 @@ pip install graphifyy && graphify install
 </div>
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 <div dir="rtl">
@@ -118,18 +118,18 @@ pip install graphifyy && graphify install
 </div>
 
 ```
-/graphify                          # المجلد الحالي
-/graphify ./raw                    # مجلد محدد
-/graphify ./raw --update           # إعادة استخراج الملفات المتغيرة فقط
-/graphify ./raw --directed         # رسم بياني موجّه
-/graphify ./raw --no-viz           # تقرير + JSON فقط، بدون HTML
-/graphify ./raw --obsidian         # إنشاء Obsidian vault
+/kb-graph                          # المجلد الحالي
+/kb-graph ./raw                    # مجلد محدد
+/kb-graph ./raw --update           # إعادة استخراج الملفات المتغيرة فقط
+/kb-graph ./raw --directed         # رسم بياني موجّه
+/kb-graph ./raw --no-viz           # تقرير + JSON فقط، بدون HTML
+/kb-graph ./raw --obsidian         # إنشاء Obsidian vault
 
-/graphify add https://arxiv.org/abs/1706.03762   # جلب ورقة بحثية
-/graphify add <video-url>                         # تحميل صوت، نسخ، إضافة
-/graphify query "ما الذي يربط Attention بالمحسِّن؟"
-/graphify path "DigestAuth" "Response"
-/graphify explain "SwinTransformer"
+/kb-graph add https://arxiv.org/abs/1706.03762   # جلب ورقة بحثية
+/kb-graph add <video-url>                         # تحميل صوت، نسخ، إضافة
+/kb-graph query "ما الذي يربط Attention بالمحسِّن؟"
+/kb-graph path "DigestAuth" "Response"
+/kb-graph explain "SwinTransformer"
 
 graphify hook install              # تثبيت Git hooks
 graphify update ./src              # إعادة استخراج ملفات الكود، بدون LLM

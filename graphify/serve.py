@@ -37,7 +37,7 @@ def _load_graph(graph_path: str) -> nx.Graph:
         print(f"error: {exc}", file=sys.stderr)
         sys.exit(1)
     except json.JSONDecodeError as exc:
-        print(f"error: graph.json is corrupted ({exc}). Re-run /graphify to rebuild.", file=sys.stderr)
+        print(f"error: graph.json is corrupted ({exc}). Re-run /kb-graph to rebuild.", file=sys.stderr)
         sys.exit(1)
 
 

@@ -1,6 +1,6 @@
 # graphify reference: query, path, explain
 
-Load this when the user asks a question against an existing graph, or runs `/graphify path` or `/graphify explain`. The core's query stub points here for the full traversal flow. These flows use the `graphify query` CLI when it is available and fall back to an inline NetworkX traversal otherwise.
+Load this when the user asks a question against an existing graph, or runs `/kb-graph path` or `/kb-graph explain`. The core's query stub points here for the full traversal flow. These flows use the `graphify query` CLI when it is available and fall back to an inline NetworkX traversal otherwise.
 
 Two traversal modes - choose based on the question:
 
@@ -14,11 +14,11 @@ First check the graph exists:
 $(cat graphify-out/.graphify_python) -c "
 from pathlib import Path
 if not Path('graphify-out/graph.json').exists():
-    print('ERROR: No graph found. Run /graphify <path> first to build the graph.')
+    print('ERROR: No graph found. Run /kb-graph <path> first to build the graph.')
     raise SystemExit(1)
 "
 ```
-If it fails, stop and tell the user to run `/graphify <path>` first.
+If it fails, stop and tell the user to run `/kb-graph <path>` first.
 
 ### Step 0 — Constrained query expansion (REQUIRED before traversal)
 
@@ -175,7 +175,7 @@ Replace `ORIGINAL_QUESTION` with the user's verbatim question, `ANSWER` with you
 
 ---
 
-## For /graphify path
+## For /kb-graph path
 
 Find the shortest path between two named concepts in the graph. Prefer the CLI when installed:
 
@@ -243,7 +243,7 @@ $(cat graphify-out/.graphify_python) -m graphify save-result --question "Path fr
 
 ---
 
-## For /graphify explain
+## For /kb-graph explain
 
 Give a plain-language explanation of a single node - everything connected to it. Prefer the CLI when installed:
 

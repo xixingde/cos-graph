@@ -14,14 +14,14 @@
   <a href="https://www.linkedin.com/in/safi-shamsi"><img src="https://img.shields.io/badge/LinkedIn-Safi%20Shamsi-0077B5?logo=linkedin" alt="LinkedIn"/></a>
 </p>
 
-**Навык для AI-ассистента по написанию кода.** Введите `/graphify` в Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro или Google Antigravity — он прочитает ваши файлы, построит граф знаний и вернёт вам структуру, о существовании которой вы не подозревали. Понимайте кодовую базу быстрее. Находите «почему» за архитектурными решениями.
+**Навык для AI-ассистента по написанию кода.** Введите `/kb-graph` в Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro или Google Antigravity — он прочитает ваши файлы, построит граф знаний и вернёт вам структуру, о существовании которой вы не подозревали. Понимайте кодовую базу быстрее. Находите «почему» за архитектурными решениями.
 
 Полностью мультимодальный. Добавляйте код, PDF, markdown, скриншоты, диаграммы, фотографии досок, изображения на других языках, видео и аудиофайлы — graphify извлекает концепции и связи из всего этого и объединяет их в один граф. Видео транскрибируются локально с Whisper, используя доменный промпт из вашего корпуса. Поддерживается 25 языков программирования через tree-sitter AST (Python, JS, TS, Go, Rust, Java, C, C++, Ruby, C#, Kotlin, Scala, PHP, Swift, Lua, Zig, PowerShell, Elixir, Objective-C, Julia, Verilog, SystemVerilog, Vue, Svelte, Dart).
 
 > Андрей Карпати ведёт папку `/raw`, куда складывает статьи, твиты, скриншоты и заметки. graphify — ответ на эту проблему: в **71,5 раза** меньше токенов на запрос по сравнению с чтением сырых файлов, сохранение между сессиями, честность относительно того, что найдено, а что выведено.
 
 ```
-/graphify .                        # работает с любой папкой — код, заметки, статьи, всё что угодно
+/kb-graph .                        # работает с любой папкой — код, заметки, статьи, всё что угодно
 ```
 
 ```
@@ -91,7 +91,7 @@ pip install graphifyy && graphify install
 Затем откройте AI-ассистент и введите:
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 Примечание: Codex использует `$` вместо `/` для навыков, поэтому вводите `$graphify .`.
@@ -113,20 +113,20 @@ pip install graphifyy && graphify install
 ## Использование
 
 ```
-/graphify                          # текущая директория
-/graphify ./raw                    # конкретная папка
-/graphify ./raw --mode deep        # более агрессивное извлечение INFERRED-рёбер
-/graphify ./raw --update           # повторно извлечь только изменённые файлы
-/graphify ./raw --directed         # направленный граф
-/graphify ./raw --cluster-only     # перезапустить кластеризацию на существующем графе
-/graphify ./raw --no-viz           # без HTML, только отчёт + JSON
-/graphify ./raw --obsidian         # создать Obsidian vault (opt-in)
+/kb-graph                          # текущая директория
+/kb-graph ./raw                    # конкретная папка
+/kb-graph ./raw --mode deep        # более агрессивное извлечение INFERRED-рёбер
+/kb-graph ./raw --update           # повторно извлечь только изменённые файлы
+/kb-graph ./raw --directed         # направленный граф
+/kb-graph ./raw --cluster-only     # перезапустить кластеризацию на существующем графе
+/kb-graph ./raw --no-viz           # без HTML, только отчёт + JSON
+/kb-graph ./raw --obsidian         # создать Obsidian vault (opt-in)
 
-/graphify add https://arxiv.org/abs/1706.03762   # получить статью
-/graphify add <video-url>                         # скачать аудио, транскрибировать, добавить
-/graphify query "что связывает Attention с оптимизатором?"
-/graphify path "DigestAuth" "Response"
-/graphify explain "SwinTransformer"
+/kb-graph add https://arxiv.org/abs/1706.03762   # получить статью
+/kb-graph add <video-url>                         # скачать аудио, транскрибировать, добавить
+/kb-graph query "что связывает Attention с оптимизатором?"
+/kb-graph path "DigestAuth" "Response"
+/kb-graph explain "SwinTransformer"
 
 graphify hook install              # установить Git-хуки
 graphify update ./src              # повторно извлечь файлы кода, без LLM

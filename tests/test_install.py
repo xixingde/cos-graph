@@ -13,7 +13,7 @@ PLATFORMS = {
     "opencode": (".config/opencode/skills/graphify/SKILL.md",),
     "kilo": (
         ".config/kilo/skills/graphify/SKILL.md",
-        ".config/kilo/command/graphify.md",
+        ".config/kilo/command/kb-graph.md",
     ),
     "claw": (".openclaw/skills/graphify/SKILL.md",),
     "droid": (".factory/skills/graphify/SKILL.md",),
@@ -227,10 +227,10 @@ def test_codex_skill_uses_graphify_with_existing_graph():
     import graphify
     skill = (Path(graphify.__file__).parent / "skill-codex.md").read_text()
     assert "Fast path — existing graph" in skill
-    assert "skip Steps 1–5 entirely and jump straight to `## For /graphify query`" in skill
+    assert "skip Steps 1–5 entirely and jump straight to `## For /kb-graph query`" in skill
     assert "graphify query" in skill
-    assert "graphify explain" in skill
-    assert "graphify path" in skill
+    assert "/kb-graph explain" in skill
+    assert "/kb-graph path" in skill
 
 
 def test_codex_agents_install_mentions_dirty_graph_output(tmp_path):
@@ -732,7 +732,7 @@ def test_kilo_install_writes_global_and_project_artifacts(tmp_path):
     home_dir.mkdir()
     _kilo_install(project_dir, home_dir)
     assert (home_dir / ".config" / "kilo" / "skills" / "graphify" / "SKILL.md").exists()
-    assert (home_dir / ".config" / "kilo" / "command" / "graphify.md").exists()
+    assert (home_dir / ".config" / "kilo" / "command" / "kb-graph.md").exists()
     assert (project_dir / "AGENTS.md").exists()
     assert (project_dir / ".kilo" / "plugins" / "graphify.js").exists()
 
@@ -746,7 +746,7 @@ def test_kilo_uninstall_removes_plugin_registration_and_command(tmp_path):
     home_dir.mkdir()
     _kilo_install(project_dir, home_dir)
     _kilo_uninstall(project_dir, home_dir)
-    assert not (home_dir / ".config" / "kilo" / "command" / "graphify.md").exists()
+    assert not (home_dir / ".config" / "kilo" / "command" / "kb-graph.md").exists()
     assert not (
         home_dir / ".config" / "kilo" / "skills" / "graphify" / "SKILL.md"
     ).exists()

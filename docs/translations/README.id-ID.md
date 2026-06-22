@@ -13,14 +13,14 @@
   <a href="https://github.com/sponsors/safishamsi"><img src="https://img.shields.io/badge/sponsor-safishamsi-ea4aaa?logo=github-sponsors" alt="Sponsor"/></a>
 </p>
 
-**Keterampilan untuk asisten kode AI.** Ketik `/graphify` di Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro, atau Google Antigravity — membaca file Anda, membangun graf pengetahuan, dan mengembalikan struktur yang tidak Anda ketahui ada. Pahami codebase lebih cepat. Temukan "mengapa" di balik keputusan arsitektur.
+**Keterampilan untuk asisten kode AI.** Ketik `/kb-graph` di Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code Copilot Chat, Aider, OpenClaw, Factory Droid, Trae, Hermes, Kiro, atau Google Antigravity — membaca file Anda, membangun graf pengetahuan, dan mengembalikan struktur yang tidak Anda ketahui ada. Pahami codebase lebih cepat. Temukan "mengapa" di balik keputusan arsitektur.
 
 Sepenuhnya multimodal. Tambahkan kode, PDF, markdown, tangkapan layar, diagram, foto papan tulis, gambar dalam bahasa lain, atau file video dan audio — graphify mengekstrak konsep dan hubungan dari semuanya dan menghubungkannya dalam satu graf. Video ditranskrip secara lokal dengan Whisper. Mendukung 25 bahasa pemrograman melalui tree-sitter AST.
 
 > Andrej Karpathy memelihara folder `/raw` tempat ia menyimpan makalah, tweet, tangkapan layar, dan catatan. graphify adalah jawaban untuk masalah itu — **71,5x** lebih sedikit token per kueri dibandingkan membaca file mentah, persisten di antara sesi.
 
 ```
-/graphify .
+/kb-graph .
 ```
 
 ```
@@ -54,10 +54,10 @@ pip install graphifyy && graphify install
 ## Penggunaan
 
 ```
-/graphify .
-/graphify ./raw --update
-/graphify query "apa yang menghubungkan Attention dengan optimizer?"
-/graphify path "DigestAuth" "Response"
+/kb-graph .
+/kb-graph ./raw --update
+/kb-graph query "apa yang menghubungkan Attention dengan optimizer?"
+/kb-graph path "DigestAuth" "Response"
 graphify hook install
 graphify update ./src
 ```
