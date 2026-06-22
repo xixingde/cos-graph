@@ -96,6 +96,7 @@ dev = [
     "wheel>=0.47.0",
     "tomli>=2.0 ; python_version < '3.11'",
     "tree-sitter-hcl>=1.2.0",
+    "zstandard>=0.23",
 ]
 
 [tool.uv]
