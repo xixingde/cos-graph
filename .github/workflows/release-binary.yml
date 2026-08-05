@@ -2,7 +2,10 @@ name: Release standalone binary
 
 on:
   push:
-    tags: ['v*']
+    branches:
+      - feature/standalone-binary-release-redesign
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
