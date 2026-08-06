@@ -83,6 +83,35 @@ jobs:
           test -s smoke-output/graphify-out/graph.json
           "$BIN" query "add" --graph smoke-output/graphify-out/graph.json
 
+          # Exercise the staged CSC-agent pipeline with an intentionally tiny
+          # PATH. The binary must not discover or launch python/py/uv/pip.
+          mkdir -p no-python-path agent-input
+          printf 'def multiply(a, b):\n    return a * b\n' > agent-input/example.py
+          ABS_BIN="$(pwd)/$BIN"
+
+          env PATH="$(pwd)/no-python-path" "$ABS_BIN" agent-prepare agent-input \
+            --out agent-output \
+            --run-id ci-smoke \
+            --max-workers 1 \
+            --json
+
+          env PATH="$(pwd)/no-python-path" "$ABS_BIN" agent-build agent-input \
+            --out agent-output \
+            --run-id ci-smoke \
+            --json
+
+          node -e "const fs=require('fs'); const p='agent-output/graphify-out/.graphify_analysis.json'; const a=JSON.parse(fs.readFileSync(p,'utf8')); const labels=Object.fromEntries(Object.keys(a.communities).map(k=>[k,'CI Community '+k])); fs.writeFileSync('agent-output/graphify-out/.graphify_labels.json',JSON.stringify(labels));"
+
+          env PATH="$(pwd)/no-python-path" "$ABS_BIN" agent-finalize agent-input \
+            --out agent-output \
+            --run-id ci-smoke \
+            --json
+
+          test -s agent-output/graphify-out/graph.json
+          test -s agent-output/graphify-out/GRAPH_REPORT.md
+          test -s agent-output/graphify-out/graph.html
+          node -e "const fs=require('fs'); const g=JSON.parse(fs.readFileSync('agent-output/graphify-out/graph.json','utf8')); if(!Array.isArray(g.links)||Object.prototype.hasOwnProperty.call(g,'edges')) process.exit(1);"
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}

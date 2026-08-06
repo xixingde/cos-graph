@@ -2087,6 +2087,85 @@ def _clone_repo(
     return dest
 
 
+def _run_agent_pipeline_command(command: str) -> None:
+    """Run one deterministic stage of an external-agent graph build."""
+    import argparse
+    import contextlib
+
+    from graphify.agent_pipeline import (
+        AgentPipelineError,
+        build_agent_pipeline,
+        finalize_agent_pipeline,
+        prepare_agent_pipeline,
+    )
+
+    parser = argparse.ArgumentParser(prog=f"graphify {command}")
+    parser.add_argument("path", nargs="?", default=".")
+    parser.add_argument("--out", default=None, help="output root; writes <out>/graphify-out/")
+    parser.add_argument("--run-id", default=None)
+    parser.add_argument("--json", action="store_true", dest="as_json")
+    if command == "agent-prepare":
+        parser.add_argument("--max-workers", type=int, default=1)
+        parser.add_argument("--chunk-size", type=int, default=22)
+        parser.add_argument("--directed", action="store_true")
+        parser.add_argument("--mode", choices=["deep"], default=None)
+    elif command == "agent-build":
+        parser.add_argument("--force", action="store_true")
+    else:
+        parser.add_argument("--labels", default=None)
+        parser.add_argument("--no-viz", action="store_true")
+        parser.add_argument("--keep-intermediates", action="store_true")
+    options = parser.parse_args(sys.argv[2:])
+
+    if command != "agent-prepare" and not options.run_id:
+        parser.error("--run-id is required")
+
+    try:
+        output_stream = sys.stderr if options.as_json else sys.stdout
+        with contextlib.redirect_stdout(output_stream):
+            if command == "agent-prepare":
+                result = prepare_agent_pipeline(
+                    options.path,
+                    out_root=options.out,
+                    max_workers=options.max_workers,
+                    directed=options.directed,
+                    deep=options.mode == "deep",
+                    chunk_size=options.chunk_size,
+                    run_id=options.run_id,
+                )
+            elif command == "agent-build":
+                result = build_agent_pipeline(
+                    options.path,
+                    out_root=options.out,
+                    run_id=options.run_id,
+                    force=options.force,
+                )
+            else:
+                result = finalize_agent_pipeline(
+                    options.path,
+                    out_root=options.out,
+                    run_id=options.run_id,
+                    labels_path=options.labels,
+                    no_viz=options.no_viz,
+                    keep_intermediates=options.keep_intermediates,
+                )
+    except AgentPipelineError as exc:
+        if options.as_json:
+            print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False))
+        else:
+            print(f"error: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+
+    if options.as_json:
+        print(json.dumps({"ok": True, **result}, ensure_ascii=False))
+    else:
+        print(
+            f"[{command}] {result.get('phase')}: "
+            f"{result.get('nodes', result.get('counts', {}).get('ast_nodes', 0))} nodes, "
+            f"{result.get('edges', result.get('counts', {}).get('ast_edges', 0))} edges"
+        )
+
+
 def main() -> None:
     for _stream in (sys.stdout, sys.stderr):
         if _stream is not None and hasattr(_stream, "reconfigure"):
@@ -2202,6 +2281,26 @@ def main() -> None:
         print("    --cargo                 extract crate→crate deps from Cargo.toml")
         print("    --global                also merge the resulting graph into the global graph")
         print("    --as <tag>              repo tag for --global (default: target directory name)")
+        print("  agent-prepare <path>    prepare AST/cache inputs for an external-agent build")
+        print("    --out DIR               output root; writes <DIR>/graphify-out/")
+        print("    --run-id ID             optional caller-provided run ID")
+        print("    --mode deep             request aggressive semantic extraction from agents")
+        print("    --directed              build a directed graph")
+        print("    --max-workers N         AST extraction subprocess count (default: 1)")
+        print("    --chunk-size N          regular semantic files per chunk (default: 22)")
+        print("    --json                  emit a machine-readable result")
+        print("  agent-build <path>      merge agent chunks and build/cluster/analyse the graph")
+        print("    --out DIR               same output root used by agent-prepare")
+        print("    --run-id ID             prepared run ID (required)")
+        print("    --force                 allow an intentional graph shrink")
+        print("    --json                  emit a machine-readable result")
+        print("  agent-finalize <path>   apply agent labels and generate final outputs")
+        print("    --out DIR               same output root used by agent-prepare")
+        print("    --run-id ID             built run ID (required)")
+        print("    --labels FILE           labels JSON (default: graphify-out/.graphify_labels.json)")
+        print("    --no-viz                skip graph.html generation")
+        print("    --keep-intermediates     keep plan/chunks/analysis for debugging")
+        print("    --json                  emit a machine-readable result")
         print("  global add <graph.json>  add/update a project graph in the global graph (~/.graphify/global-graph.json)")
         print("    --as <tag>               repo tag (default: parent directory name)")
         print("  global remove <tag>      remove a repo's nodes from the global graph")
@@ -2286,12 +2385,18 @@ def main() -> None:
     # (e.g. "cursor install --help" was silently installing into Cursor, #821).
     # Exempt: free-text commands (user string may contain these tokens), and
     # "install"/"uninstall" which have their own per-subcommand help handlers.
-    _FREE_TEXT_CMDS = {"query", "explain", "path", "save-result", "install", "uninstall"}
+    _FREE_TEXT_CMDS = {
+        "query", "explain", "path", "save-result", "install", "uninstall",
+        "agent-prepare", "agent-build", "agent-finalize",
+    }
     if cmd not in _FREE_TEXT_CMDS and any(a in {"-h", "--help", "-?"} for a in sys.argv[2:]):
         print(f"Run 'graphify --help' for full usage.")
         return
 
-    if cmd == "install":
+    if cmd in {"agent-prepare", "agent-build", "agent-finalize"}:
+        _run_agent_pipeline_command(cmd)
+
+    elif cmd == "install":
         # Default to windows platform on Windows, claude elsewhere
         default_platform = "windows" if platform.system() == "Windows" else "claude"
         selected_platform: str | None = None
