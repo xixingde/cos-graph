@@ -94,6 +94,38 @@ def test_code_only_pipeline_preserves_public_output_contract(tmp_path: Path, mon
     assert not (graph_dir / ".graphify_analysis.json").exists()
 
 
+def test_prepare_with_one_worker_skips_process_pool(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The no-Python Windows binary must keep max_workers=1 in-process."""
+    project = tmp_path / "project"
+    output_root = project / ".csc" / "kb" / "repos"
+    project.mkdir()
+    for index in range(25):
+        (project / f"module_{index}.py").write_text(
+            f"def function_{index}():\n    return {index}\n",
+            encoding="utf-8",
+        )
+
+    monkeypatch.setattr(
+        "graphify.extract._extract_parallel",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("max_workers=1 must not start ProcessPoolExecutor")
+        ),
+    )
+
+    plan = prepare_agent_pipeline(
+        project,
+        out_root=output_root,
+        run_id="sequential",
+        max_workers=1,
+    )
+
+    assert plan["chunks"] == []
+    ast = _read(output_root / "graphify-out" / ".graphify_ast.json")
+    assert ast["nodes"]
+
+
 def test_build_refuses_when_more_than_half_of_chunks_are_missing(tmp_path: Path) -> None:
     project = tmp_path / "project"
     output_root = project / ".csc" / "kb" / "repos"

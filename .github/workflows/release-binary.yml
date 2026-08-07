@@ -86,7 +86,11 @@ jobs:
           # Exercise the staged CSC-agent pipeline with an intentionally tiny
           # PATH. The binary must not discover or launch python/py/uv/pip.
           mkdir -p no-python-path agent-input
-          printf 'def multiply(a, b):\n    return a * b\n' > agent-input/example.py
+          # Keep this above graphify.extract._PARALLEL_THRESHOLD (20) so the
+          # Windows onefile build is tested against a realistic codebase size.
+          for i in $(seq 1 25); do
+            printf 'def multiply_%s(a, b):\n    return a * b\n' "$i" > "agent-input/example_${i}.py"
+          done
           printf '# Multiplication service\n\nThe service performs arithmetic operations.\n' > agent-input/README.md
           ABS_BIN="$(pwd)/$BIN"
 

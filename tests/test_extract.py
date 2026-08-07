@@ -769,7 +769,41 @@ def test_extract_parallel_returns_false_on_broken_pool(tmp_path, monkeypatch, ca
     assert ok is False, "function should report failure via return value, not raise"
     out = capsys.readouterr().out
     assert "BrokenProcessPool" in out, "user-facing warning must mention the failure"
-    assert "__main__" in out, "warning must hint at the Windows __main__ guard idiom"
+    assert "worker process could not be started" in out
+
+
+def test_extract_parallel_returns_false_on_worker_spawn_oserror(
+    tmp_path, monkeypatch, capsys
+):
+    """Frozen Windows executables must fall back after CreateProcess fails."""
+    import concurrent.futures
+    from graphify import extract as extract_mod
+
+    class FailingPool:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            raise OSError(193, "%1 is not a valid Win32 application")
+
+        def __exit__(self, *args):
+            return False
+
+    monkeypatch.setattr(
+        concurrent.futures,
+        "ProcessPoolExecutor",
+        lambda *args, **kwargs: FailingPool(),
+    )
+
+    per_file: list = [None]
+    ok = extract_mod._extract_parallel(
+        [(0, FIXTURES / "sample.py")], per_file, tmp_path, 1, 1
+    )
+
+    assert ok is False
+    out = capsys.readouterr().out
+    assert "OSError" in out
+    assert "falling back to sequential" in out
 
 
 # ---------------------------------------------------------------------------

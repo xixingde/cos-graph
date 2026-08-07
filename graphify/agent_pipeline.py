@@ -131,7 +131,19 @@ def prepare_agent_pipeline(
     for raw_path in detection.get("files", {}).get("code", []):
         path = Path(raw_path)
         code_files.extend(collect_files(path) if path.is_dir() else [path])
-    ast = extract(code_files, cache_root=scan_root, max_workers=max_workers) if code_files else _empty_extraction()
+    # A single worker must run in-process. Besides avoiding needless process
+    # startup, this is required by Windows onefile binaries: multiprocessing's
+    # spawn bootstrap cannot use the extracted Nuitka payload as a Python
+    # child-process executable (CreateProcess fails with WinError 193).
+    if code_files:
+        ast = extract(
+            code_files,
+            cache_root=scan_root,
+            max_workers=max_workers,
+            parallel=max_workers > 1,
+        )
+    else:
+        ast = _empty_extraction()
     ast.setdefault("hyperedges", [])
     ast.setdefault("input_tokens", 0)
     ast.setdefault("output_tokens", 0)

@@ -12341,9 +12341,8 @@ def _extract_parallel(
     """Extract uncached files in parallel using ProcessPoolExecutor.
 
     Returns True if the pool ran to completion. Returns False if the pool
-    failed in a recoverable way (typically Windows-spawn without an
-    ``if __name__ == "__main__"`` guard in the calling script, which causes
-    BrokenProcessPool); the caller should fall back to sequential extraction.
+    failed in a recoverable way (typically BrokenProcessPool or a Windows
+    worker-spawn OSError); the caller should fall back to sequential extraction.
     """
     import concurrent.futures
 
@@ -12404,16 +12403,16 @@ def _extract_parallel(
                         f"({done_count * 100 // len(uncached_work)}%) [{max_workers} workers]",
                         flush=True,
                     )
-    except concurrent.futures.process.BrokenProcessPool:
+    except (concurrent.futures.process.BrokenProcessPool, OSError) as exc:
         # On Windows (spawn start method) the worker subprocesses re-import the
         # caller's __main__. Inline invocations like `python -c "..."` have no
         # __main__ guard, so worker bootstrap raises and the pool dies before
         # any work completes. Fall back to in-process sequential extraction —
         # slower but correct.
         print(
-            "  warning: parallel extraction failed (BrokenProcessPool); "
+            f"  warning: parallel extraction failed ({type(exc).__name__}: {exc}); "
             "falling back to sequential. On Windows this usually means the "
-            'caller is missing an `if __name__ == "__main__":` guard. Pass '
+            "worker process could not be started. Pass "
             "parallel=False to extract() to skip the pool entirely.",
             flush=True,
         )
