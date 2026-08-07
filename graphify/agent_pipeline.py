@@ -2,7 +2,7 @@
 
 The semantic extraction and community naming steps intentionally remain outside
 this module: the host coding agent performs those judgements.  Everything else
-is kept here so standalone Graphify binaries can reproduce the regular skill's
+is kept here so standalone Graphify binaries provide the complete deterministic
 build and export behaviour without a Python interpreter on the user's machine.
 """
 
@@ -213,7 +213,7 @@ def _validate_chunk(chunk: dict[str, Any], graph_dir: Path, run_id: str) -> tupl
     if output_path.parent != graph_dir.resolve() or not output_path.name.startswith(expected_prefix):
         return None, f"unsafe chunk output path: {output_path}"
     try:
-        data = json.loads(output_path.read_text(encoding="utf-8"))
+        data = json.loads(output_path.read_text(encoding="utf-8-sig"))
     except (OSError, json.JSONDecodeError) as exc:
         return None, str(exc)
     if not isinstance(data, dict) or not isinstance(data.get("nodes"), list) or not isinstance(data.get("edges"), list):
@@ -463,9 +463,9 @@ def finalize_agent_pipeline(
     )
     (graph_dir / "GRAPH_REPORT.md").write_text(report, encoding="utf-8")
     _write_json(graph_dir / ".graphify_labels.json", {str(key): value for key, value in labels.items()})
-    # Match the legacy /kb-graph default build exactly: labels affect the
-    # report and HTML, while graph.json remains the ordinary node-link export
-    # produced without community_labels.
+    # Labels affect the report and HTML. graph.json remains the ordinary
+    # node-link export produced without community_labels so its graph schema
+    # does not vary with the display language chosen for community names.
     if not to_json(graph, communities, str(graph_dir / "graph.json")):
         raise AgentPipelineError("final graph unexpectedly failed the shrink guard")
 

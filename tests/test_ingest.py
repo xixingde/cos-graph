@@ -66,3 +66,37 @@ def test_answer_in_body(tmp_path):
     out = save_query_result("what is the answer?", answer, mem)
     content = out.read_text()
     assert answer in content
+
+
+def test_outcome_in_frontmatter(tmp_path):
+    out = save_query_result(
+        "q",
+        "a",
+        tmp_path / "memory",
+        outcome="dead_end",
+    )
+    assert 'outcome: "dead_end"' in out.read_text()
+
+
+def test_correction_in_body(tmp_path):
+    out = save_query_result(
+        "q",
+        "a",
+        tmp_path / "memory",
+        outcome="corrected",
+        correction="Use RepositoryService instead.",
+    )
+    content = out.read_text()
+    assert "## Correction" in content
+    assert "Use RepositoryService instead." in content
+
+
+def test_correction_requires_corrected_outcome(tmp_path):
+    with pytest.raises(ValueError, match="requires outcome='corrected'"):
+        save_query_result(
+            "q",
+            "a",
+            tmp_path / "memory",
+            outcome="useful",
+            correction="replacement",
+        )

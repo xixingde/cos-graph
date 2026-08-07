@@ -19,7 +19,7 @@ def _read(path: Path) -> dict:
 
 def _write_labels(graph_dir: Path) -> Path:
     analysis = _read(graph_dir / ".graphify_analysis.json")
-    labels = {community_id: f"Test Community {community_id}" for community_id in analysis["communities"]}
+    labels = {community_id: f"测试社区 {community_id}" for community_id in analysis["communities"]}
     path = graph_dir / ".graphify_labels.json"
     # Windows PowerShell commonly emits a UTF-8 BOM; the CLI must accept it.
     path.write_text(json.dumps(labels), encoding="utf-8-sig")
@@ -42,8 +42,8 @@ def test_code_only_pipeline_preserves_public_output_contract(tmp_path: Path, mon
     built = build_agent_pipeline(project, out_root=output_root, run_id="contract")
     assert built["nodes"] > 0
 
-    # Fixed extraction input must be byte-structure equivalent to the legacy
-    # skill's direct build_from_json -> cluster -> to_json sequence.
+    # Fixed extraction input must remain byte-structure equivalent to the
+    # direct build_from_json -> cluster -> to_json sequence.
     from graphify.build import build_from_json
     from graphify.cluster import cluster
     from graphify.export import to_json
@@ -85,6 +85,8 @@ def test_code_only_pipeline_preserves_public_output_contract(tmp_path: Path, mon
     assert "hyperedges" in graph
     assert finalized["nodes"] == len(graph["nodes"])
     assert (graph_dir / "GRAPH_REPORT.md").is_file()
+    saved_labels = _read(graph_dir / ".graphify_labels.json")
+    assert all(label.startswith("测试社区") for label in saved_labels.values())
     assert (graph_dir / "graph.html").is_file()
     assert (graph_dir / "manifest.json").is_file()
     assert (graph_dir / "cost.json").is_file()
@@ -130,7 +132,7 @@ def test_ast_nodes_win_over_semantic_duplicates(tmp_path: Path) -> None:
         "hyperedges": [],
         "input_tokens": 10,
         "output_tokens": 5,
-    }), encoding="utf-8")
+    }), encoding="utf-8-sig")
 
     build_agent_pipeline(project, out_root=output_root, run_id="merge")
     extraction = _read(graph_dir / ".graphify_extract.json")

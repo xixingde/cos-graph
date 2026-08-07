@@ -87,6 +87,7 @@ jobs:
           # PATH. The binary must not discover or launch python/py/uv/pip.
           mkdir -p no-python-path agent-input
           printf 'def multiply(a, b):\n    return a * b\n' > agent-input/example.py
+          printf '# Multiplication service\n\nThe service performs arithmetic operations.\n' > agent-input/README.md
           ABS_BIN="$(pwd)/$BIN"
 
           env PATH="$(pwd)/no-python-path" "$ABS_BIN" agent-prepare agent-input \
@@ -94,6 +95,10 @@ jobs:
             --run-id ci-smoke \
             --max-workers 1 \
             --json
+
+          # Simulate a Windows agent/editor that writes UTF-8 JSON with a BOM.
+          # agent-build must accept it and merge semantic data with AST output.
+          node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('agent-output/graphify-out/.graphify_agent_plan.json','utf8')); if(p.chunks.length!==1) process.exit(1); const src=p.chunks[0].files[0]; const chunk={nodes:[{id:'concept:multiplication-service',label:'Multiplication Service',type:'concept',file_type:'concept',source_file:src},{id:'concept:arithmetic',label:'Arithmetic',type:'concept',file_type:'concept',source_file:src}],edges:[{source:'concept:multiplication-service',target:'concept:arithmetic',relation:'performs',confidence:'EXTRACTED',confidence_score:1,source_file:src}],hyperedges:[],input_tokens:10,output_tokens:5}; fs.writeFileSync(p.chunks[0].output_path,'\ufeff'+JSON.stringify(chunk));"
 
           env PATH="$(pwd)/no-python-path" "$ABS_BIN" agent-build agent-input \
             --out agent-output \
@@ -111,6 +116,22 @@ jobs:
           test -s agent-output/graphify-out/GRAPH_REPORT.md
           test -s agent-output/graphify-out/graph.html
           node -e "const fs=require('fs'); const g=JSON.parse(fs.readFileSync('agent-output/graphify-out/graph.json','utf8')); if(!Array.isArray(g.links)||Object.prototype.hasOwnProperty.call(g,'edges')) process.exit(1);"
+
+          env PATH="$(pwd)/no-python-path" "$ABS_BIN" vocab \
+            --graph agent-output/graphify-out/graph.json \
+            --output agent-output/graphify-out/.vocab.txt
+          grep -Fxq "multiplication" agent-output/graphify-out/.vocab.txt
+
+          printf 'Multiplication Service performs Arithmetic.\n' \
+            > agent-output/graphify-out/.query-answer.txt
+          env PATH="$(pwd)/no-python-path" "$ABS_BIN" save-result \
+            --question "What performs arithmetic?" \
+            --answer-file agent-output/graphify-out/.query-answer.txt \
+            --type query \
+            --nodes "Multiplication Service" "Arithmetic" \
+            --outcome useful \
+            --memory-dir agent-output/graphify-out/memory
+          test -n "$(find agent-output/graphify-out/memory -name 'query_*.md' -print -quit)"
 
       - uses: actions/upload-artifact@v4
         with:

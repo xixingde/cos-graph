@@ -2239,17 +2239,24 @@ def main() -> None:
         print("    --context C             explicit edge-context filter (repeatable)")
         print("    --budget N              cap output at N tokens (default 2000)")
         print("    --graph <path>          path to graph.json (default graphify-out/graph.json)")
+        print("  vocab                   extract node-label tokens for query expansion")
+        print("    --graph <path>          path to graph.json (default graphify-out/graph.json)")
+        print("    --output <path>         write one token per line instead of stdout")
         print("  affected \"X\"             reverse traversal to find nodes impacted by X")
         print("    --relation R            edge relation to traverse in reverse (repeatable)")
         print("    --depth N               reverse traversal depth (default 2)")
         print("    --graph <path>          path to graph.json (default graphify-out/graph.json)")
         print("  save-result             save a Q&A result to graphify-out/memory/ for graph feedback loop")
         print("    --question Q            the question asked")
-        print("    --answer A              the answer to save")
+        print("    --answer A              the answer to save (or use --answer-file)")
+        print("    --answer-file PATH      read the answer from a UTF-8 text file")
         print(
             "    --type T                query type: query|path_query|explain (default: query)"
         )
         print("    --nodes N1 N2 ...       source node labels cited in the answer")
+        print("    --outcome STATUS        useful|dead_end|corrected")
+        print("    --correction TEXT       corrected answer detail (requires corrected outcome)")
+        print("    --correction-file PATH  read correction detail from a UTF-8 text file")
         print("    --memory-dir DIR        memory directory (default: graphify-out/memory)")
         print("  check-update <path>     check needs_update flag and notify if semantic re-extraction is pending (cron-safe)")
         print("  tree                    emit a D3 v7 collapsible-tree HTML for graph.json")
@@ -2386,7 +2393,7 @@ def main() -> None:
     # Exempt: free-text commands (user string may contain these tokens), and
     # "install"/"uninstall" which have their own per-subcommand help handlers.
     _FREE_TEXT_CMDS = {
-        "query", "explain", "path", "save-result", "install", "uninstall",
+        "query", "vocab", "explain", "path", "save-result", "install", "uninstall",
         "agent-prepare", "agent-build", "agent-finalize",
     }
     if cmd not in _FREE_TEXT_CMDS and any(a in {"-h", "--help", "-?"} for a in sys.argv[2:]):
@@ -2860,6 +2867,43 @@ def main() -> None:
             duration_ms=(_time.perf_counter() - _t0) * 1000,
         )
         print(_result)
+    elif cmd == "vocab":
+        import argparse as _ap
+        import json as _json
+
+        p = _ap.ArgumentParser(prog="graphify vocab")
+        p.add_argument("--graph", default=_default_graph_path())
+        p.add_argument("--output")
+        opts = p.parse_args(sys.argv[2:])
+
+        gp = Path(opts.graph).resolve()
+        if not gp.exists():
+            print(f"error: graph file not found: {gp}", file=sys.stderr)
+            sys.exit(1)
+        if gp.suffix.lower() != ".json":
+            print("error: graph file must be a .json file", file=sys.stderr)
+            sys.exit(1)
+        _enforce_graph_size_cap_or_exit(gp)
+        try:
+            raw = _json.loads(gp.read_text(encoding="utf-8-sig"))
+            nodes = raw.get("nodes", [])
+            if not isinstance(nodes, list):
+                raise ValueError("graph 'nodes' must be a list")
+            from graphify.query_vocab import extract_query_vocabulary
+
+            vocabulary = extract_query_vocabulary(nodes)
+        except Exception as exc:
+            print(f"error: could not extract graph vocabulary: {exc}", file=sys.stderr)
+            sys.exit(1)
+
+        content = "\n".join(vocabulary)
+        if opts.output:
+            output_path = Path(opts.output).resolve()
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(content, encoding="utf-8")
+            print(f"Vocabulary: {len(vocabulary)} tokens -> {output_path}")
+        else:
+            print(content)
     elif cmd == "affected":
         if len(sys.argv) < 3:
             print("Usage: graphify affected \"<node-or-label>\" [--relation R] [--depth N] [--graph path]", file=sys.stderr)
@@ -2926,19 +2970,54 @@ def main() -> None:
 
         p = _ap.ArgumentParser(prog="graphify save-result")
         p.add_argument("--question", required=True)
-        p.add_argument("--answer", required=True)
+        answer_group = p.add_mutually_exclusive_group(required=True)
+        answer_group.add_argument("--answer")
+        answer_group.add_argument("--answer-file")
         p.add_argument("--type", dest="query_type", default="query")
         p.add_argument("--nodes", nargs="*", default=[])
+        p.add_argument(
+            "--outcome",
+            choices=("useful", "dead_end", "corrected"),
+        )
+        correction_group = p.add_mutually_exclusive_group()
+        correction_group.add_argument("--correction")
+        correction_group.add_argument("--correction-file")
         p.add_argument("--memory-dir", default="graphify-out/memory")
         opts = p.parse_args(sys.argv[2:])
+        if (opts.correction or opts.correction_file) and opts.outcome != "corrected":
+            p.error("--correction/--correction-file requires --outcome corrected")
+
+        def _read_result_text(path_value: str, option: str) -> str:
+            text_path = Path(path_value).expanduser().resolve()
+            if not text_path.is_file():
+                p.error(f"{option} file not found: {text_path}")
+            if text_path.stat().st_size > 4 * 1024 * 1024:
+                p.error(f"{option} file exceeds 4 MiB: {text_path}")
+            try:
+                return text_path.read_text(encoding="utf-8-sig")
+            except UnicodeError as exc:
+                p.error(f"{option} file must be UTF-8: {text_path}: {exc}")
+
+        answer = (
+            _read_result_text(opts.answer_file, "--answer-file")
+            if opts.answer_file
+            else opts.answer
+        )
+        correction = (
+            _read_result_text(opts.correction_file, "--correction-file")
+            if opts.correction_file
+            else opts.correction
+        )
         from graphify.ingest import save_query_result as _sqr
 
         out = _sqr(
             question=opts.question,
-            answer=opts.answer,
+            answer=answer,
             memory_dir=Path(opts.memory_dir),
             query_type=opts.query_type,
             source_nodes=opts.nodes or None,
+            outcome=opts.outcome,
+            correction=correction,
         )
         print(f"Saved to {out}")
     elif cmd == "path":

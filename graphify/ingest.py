@@ -275,6 +275,8 @@ def save_query_result(
     memory_dir: Path,
     query_type: str = "query",
     source_nodes: list[str] | None = None,
+    outcome: str | None = None,
+    correction: str | None = None,
 ) -> Path:
     """Save a Q&A result as markdown so it gets extracted into the graph on next --update.
 
@@ -282,6 +284,13 @@ def save_query_result(
     that graphify's extractor reads as node metadata. This closes the feedback loop:
     the system grows smarter from both what you add AND what you ask.
     """
+    valid_outcomes = {"useful", "dead_end", "corrected"}
+    if outcome is not None and outcome not in valid_outcomes:
+        choices = ", ".join(sorted(valid_outcomes))
+        raise ValueError(f"outcome must be one of: {choices}")
+    if correction and outcome != "corrected":
+        raise ValueError("correction requires outcome='corrected'")
+
     memory_dir = Path(memory_dir)
     memory_dir.mkdir(parents=True, exist_ok=True)
 
@@ -299,6 +308,8 @@ def save_query_result(
     if source_nodes:
         nodes_str = ", ".join(f'"{n}"' for n in source_nodes[:10])
         frontmatter_lines.append(f"source_nodes: [{nodes_str}]")
+    if outcome:
+        frontmatter_lines.append(f'outcome: "{outcome}"')
     frontmatter_lines.append("---")
 
     body_lines = [
@@ -312,6 +323,8 @@ def save_query_result(
     if source_nodes:
         body_lines += ["", "## Source Nodes", ""]
         body_lines += [f"- {n}" for n in source_nodes]
+    if correction:
+        body_lines += ["", "## Correction", "", correction]
 
     content = "\n".join(frontmatter_lines + body_lines)
     out_path = memory_dir / filename
