@@ -2475,6 +2475,19 @@ def _extract_generic(path: Path, config: LanguageConfig) -> dict:
     file_nid = _make_id(str(path))
     add_node(file_nid, path.name, 1)
 
+    # Keep traversal state on the heap rather than the C call stack.  Nuitka
+    # compiles this large visitor into a C function with a sizeable stack frame;
+    # recursive descent over otherwise ordinary JavaScript (for example nested
+    # IIFEs) can exhaust the Windows stack before Python can raise
+    # RecursionError.  Scheduling children here preserves the original DFS
+    # order without recursively invoking the compiled visitor.
+    pending_walk_nodes: list[tuple[Any, str | None]] = []
+
+    def _schedule_walk_children(node, parent_class_nid: str | None) -> None:
+        pending_walk_nodes.extend(
+            (child, parent_class_nid) for child in reversed(node.children)
+        )
+
     def walk(node, parent_class_nid: str | None = None) -> None:
         t = node.type
 
@@ -2509,8 +2522,7 @@ def _extract_generic(path: Path, config: LanguageConfig) -> dict:
             if t == "export_statement":
                 has_source = any(c.type == "string" for c in node.children)
                 if not has_source:
-                    for child in node.children:
-                        walk(child, parent_class_nid)
+                    _schedule_walk_children(node, parent_class_nid)
             return
 
         # Class types
@@ -2897,8 +2909,7 @@ def _extract_generic(path: Path, config: LanguageConfig) -> dict:
             # Find body and recurse
             body = _find_body(node, config)
             if body:
-                for child in body.children:
-                    walk(child, parent_class_nid=class_nid)
+                _schedule_walk_children(body, class_nid)
             return
 
         # Event listener property arrays: $listen = [Event::class => [Listener::class]]
@@ -3435,15 +3446,16 @@ def _extract_generic(path: Path, config: LanguageConfig) -> dict:
         # node orphaned (#1050). Treat decorated_definition as a transparent
         # wrapper so parent_class_nid propagates to the real function node.
         if t == "decorated_definition":
-            for child in node.children:
-                walk(child, parent_class_nid=parent_class_nid)
+            _schedule_walk_children(node, parent_class_nid)
             return
 
         # Default: recurse
-        for child in node.children:
-            walk(child, parent_class_nid=None)
+        _schedule_walk_children(node, None)
 
-    walk(root)
+    pending_walk_nodes.append((root, None))
+    while pending_walk_nodes:
+        next_node, next_parent_class_nid = pending_walk_nodes.pop()
+        walk(next_node, next_parent_class_nid)
 
     # ── Call-graph pass ───────────────────────────────────────────────────────
     label_to_nid: dict[str, str] = {}     # case-sensitive (Ruby, C#, Java, Kotlin, etc.)
@@ -3472,6 +3484,13 @@ def _extract_generic(path: Path, config: LanguageConfig) -> dict:
             return None
         return _read_text(scope, source)
 
+    pending_call_nodes: list[tuple[Any, str]] = []
+
+    def _schedule_call_children(node, caller_nid: str) -> None:
+        pending_call_nodes.extend(
+            (child, caller_nid) for child in reversed(node.children)
+        )
+
     def walk_calls(node, caller_nid: str) -> None:
         if node.type in config.function_boundary_types:
             return
@@ -3482,8 +3501,7 @@ def _extract_generic(path: Path, config: LanguageConfig) -> dict:
                 if _dynamic_import_js(node, source, caller_nid, str_path,
                                       edges, seen_dyn_import_pairs):
                     # Still recurse into children (import().then(...) may have calls)
-                    for child in node.children:
-                        walk_calls(child, caller_nid)
+                    _schedule_call_children(node, caller_nid)
                     return
 
             callee_name: str | None = None
@@ -3761,17 +3779,23 @@ def _extract_generic(path: Path, config: LanguageConfig) -> dict:
                             "weight": 1.0,
                         })
 
-        for child in node.children:
-            walk_calls(child, caller_nid)
-
-    for caller_nid, body_node in function_bodies:
-        walk_calls(body_node, caller_nid)
+        _schedule_call_children(node, caller_nid)
 
     # #1356: walk property/field initializers (collected above). walk_calls
     # self-guards against re-entering function bodies and dedups via
     # seen_call_pairs, so a closure inside an initializer is not double-walked.
-    for owner_nid, init_node in initializer_nodes:
-        walk_calls(init_node, owner_nid)
+    # Push later work first because this is a LIFO stack: function bodies retain
+    # their historical precedence over initializer nodes, and siblings retain
+    # their original left-to-right DFS order.
+    pending_call_nodes.extend(
+        (init_node, owner_nid) for owner_nid, init_node in reversed(initializer_nodes)
+    )
+    pending_call_nodes.extend(
+        (body_node, caller_nid) for caller_nid, body_node in reversed(function_bodies)
+    )
+    while pending_call_nodes:
+        next_node, next_caller_nid = pending_call_nodes.pop()
+        walk_calls(next_node, next_caller_nid)
 
     # ── Event listener pass ───────────────────────────────────────────────────
     seen_listen_pairs: set[tuple[str, str]] = set()

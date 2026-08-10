@@ -513,6 +513,27 @@ def test_extract_js_arrow_function_still_extracted():
         arrow_fixture.unlink()
 
 
+def test_extract_js_iife_uses_non_recursive_visitors(tmp_path):
+    """UMD/IIFE traversal must not consume the compiled executable's C stack."""
+    from graphify.extract import extract_js
+
+    source = """
+    ;(function(root, factory) {
+        root.bundle = factory();
+    }(this, function() {
+        function bundledValue() { return 42; }
+        return { bundledValue };
+    }));
+    """
+    path = tmp_path / "iife.js"
+    path.write_text(source, encoding="utf-8")
+
+    result = extract_js(path)
+
+    assert "error" not in result
+    assert any("bundledValue" in node["label"] for node in result["nodes"])
+
+
 def test_extract_js_this_assigned_methods(tmp_path):
     """`this.X = () => {}` / `this.X = function(){}` in a constructor-style
     function body must be captured as methods owned by that function.

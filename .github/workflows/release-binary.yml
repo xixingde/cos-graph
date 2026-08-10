@@ -80,6 +80,7 @@ jobs:
           printf 'def add(a, b):\n    return a + b\n' > smoke-input/example.py
           printf 'function multiply(a, b) { return a * b; }\n' > smoke-input/example.js
           printf 'export function formatUser(name: string): string { return name.trim(); }\n' > smoke-input/example.ts
+          printf ';(function(root, factory) { root.bundle = factory(); }(this, function() { function bundledValue() { return 42; } return { bundledValue }; }));\n' > smoke-input/iife.js
 
           "$BIN" extract smoke-input \
             --out smoke-output \
@@ -87,7 +88,7 @@ jobs:
             --max-workers 1
 
           test -s smoke-output/graphify-out/graph.json
-          node -e "const fs=require('fs'); const g=JSON.parse(fs.readFileSync('smoke-output/graphify-out/graph.json','utf8')); const labels=g.nodes.map(n=>String(n.label)); if(!labels.some(x=>x.includes('multiply'))||!labels.some(x=>x.includes('formatUser'))) process.exit(1);"
+          node -e "const fs=require('fs'); const g=JSON.parse(fs.readFileSync('smoke-output/graphify-out/graph.json','utf8')); const labels=g.nodes.map(n=>String(n.label)); if(!labels.some(x=>x.includes('multiply'))||!labels.some(x=>x.includes('formatUser'))||!labels.some(x=>x.includes('bundledValue'))) process.exit(1);"
           "$BIN" query "add" --graph smoke-output/graphify-out/graph.json
 
           # Exercise the staged CSC-agent pipeline with an intentionally tiny
@@ -99,6 +100,7 @@ jobs:
             printf 'def multiply_%s(a, b):\n    return a * b\n' "$i" > "agent-input/example_${i}.py"
           done
           printf 'export const divide = (a, b) => a / b;\n' > agent-input/example.js
+          cp smoke-input/iife.js agent-input/iife.js
           printf '# Multiplication service\n\nThe service performs arithmetic operations.\n' > agent-input/README.md
           ABS_BIN="$(pwd)/$BIN"
 
