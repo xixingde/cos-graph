@@ -110,6 +110,7 @@ def prepare_agent_pipeline(
     run_id: str | None = None,
 ) -> dict[str, Any]:
     """Detect files, extract code AST, check semantic cache, and write a run plan."""
+    from graphify.agent_schema import normalise_agent_extraction, validate_agent_extraction
     from graphify.cache import check_semantic_cache
     from graphify.detect import detect
     from graphify.extract import collect_files, extract
@@ -160,13 +161,28 @@ def prepare_agent_pipeline(
         root=scan_root,
         storage_root=output_root,
     )
-    cached = {
+    cached = normalise_agent_extraction({
         "nodes": cached_nodes,
         "edges": cached_edges,
         "hyperedges": cached_hyperedges,
+    }, root=scan_root)
+    # Semantic cache entries predate the strict CosKnow output contract.  A
+    # legacy entry may therefore contain free-form relations or malformed
+    # hyperedges.  Re-extract all semantic files instead of silently mixing an
+    # incompatible cache with newly validated chunks.
+    cached_ast_node_ids = {
+        str(node.get("id")) for node in ast.get("nodes", [])
+        if isinstance(node, dict) and node.get("id") is not None
     }
+    if validate_agent_extraction(
+        cached,
+        external_node_ids=cached_ast_node_ids,
+        require_resolved_endpoints=True,
+    ):
+        cached = _empty_extraction()
+        uncached = list(semantic_files)
     cached_path = graph_dir / ".graphify_cached.json"
-    if cached_nodes or cached_edges or cached_hyperedges:
+    if cached["nodes"] or cached["edges"] or cached["hyperedges"]:
         _write_json(cached_path, cached)
     else:
         cached_path.unlink(missing_ok=True)
@@ -219,7 +235,18 @@ def _load_plan(scan_root: Path, output_root: Path, graph_dir: Path, run_id: str)
     return plan
 
 
-def _validate_chunk(chunk: dict[str, Any], graph_dir: Path, run_id: str) -> tuple[dict[str, Any] | None, str | None]:
+def _validate_chunk(
+    chunk: dict[str, Any],
+    graph_dir: Path,
+    run_id: str,
+    scan_root: Path,
+) -> tuple[dict[str, Any] | None, str | None]:
+    from graphify.agent_schema import (
+        format_agent_schema_errors,
+        normalise_agent_extraction,
+        validate_agent_extraction,
+    )
+
     raw_output = chunk.get("output_path")
     if not isinstance(raw_output, str):
         return None, "plan has no output_path"
@@ -231,11 +258,44 @@ def _validate_chunk(chunk: dict[str, Any], graph_dir: Path, run_id: str) -> tupl
         data = json.loads(output_path.read_text(encoding="utf-8-sig"))
     except (OSError, json.JSONDecodeError) as exc:
         return None, str(exc)
-    if not isinstance(data, dict) or not isinstance(data.get("nodes"), list) or not isinstance(data.get("edges"), list):
-        return None, "chunk must be an object containing nodes and edges arrays"
-    if not isinstance(data.get("hyperedges", []), list):
-        return None, "chunk hyperedges must be an array"
-    return data, None
+    if not isinstance(data, dict):
+        return None, "chunk must be a JSON object"
+    normalized = normalise_agent_extraction(data, root=scan_root)
+    errors = validate_agent_extraction(normalized)
+    if errors:
+        return None, format_agent_schema_errors(errors)
+    return normalized, None
+
+
+def _write_compatible_graph(
+    graph: Any,
+    communities: dict[int, Any],
+    graph_path: Path,
+    *,
+    semantic_node_ids: set[str],
+    force: bool = False,
+) -> None:
+    """Validate a candidate export before replacing the public graph.json."""
+    from graphify.agent_schema import format_agent_schema_errors, validate_final_agent_graph
+    from graphify.export import to_json
+
+    candidate_path = graph_path.with_name(".graphify_graph_candidate.json")
+    try:
+        if not to_json(graph, communities, str(candidate_path), force=True):
+            raise AgentPipelineError("failed to serialize the candidate graph")
+        candidate = _read_json(candidate_path, label="candidate graph")
+        errors = validate_final_agent_graph(candidate, semantic_node_ids=semantic_node_ids)
+        if errors:
+            raise AgentPipelineError(
+                "final graph is incompatible with the CosKnow contract: "
+                + format_agent_schema_errors(errors)
+            )
+        if not to_json(graph, communities, str(graph_path), force=force):
+            raise AgentPipelineError(
+                f"refused to shrink {graph_path}; use --force only when the reduction is intentional"
+            )
+    finally:
+        candidate_path.unlink(missing_ok=True)
 
 
 def build_agent_pipeline(
@@ -248,10 +308,10 @@ def build_agent_pipeline(
     """Merge agent chunks with AST/cache data, then build and analyse the graph."""
     from graphify.analyze import god_nodes, suggest_questions, surprising_connections
     from graphify.build import build_from_json
+    from graphify.agent_schema import format_agent_schema_errors, validate_agent_extraction
     from graphify.cache import save_semantic_cache
     from graphify.cluster import cluster, score_all
     from graphify.diagnostics import diagnose_extraction
-    from graphify.export import to_json
     from graphify.report import generate
 
     scan_root, output_root, graph_dir = _paths(input_path, out_root)
@@ -269,14 +329,16 @@ def build_agent_pipeline(
         if not isinstance(chunk, dict):
             failures.append({"chunk_id": "?", "error": "invalid plan entry"})
             continue
-        data, error = _validate_chunk(chunk, graph_dir, actual_run_id)
+        data, error = _validate_chunk(chunk, graph_dir, actual_run_id, scan_root)
         if error:
             failures.append({"chunk_id": str(chunk.get("chunk_id", "?")), "error": error})
         elif data is not None:
             valid_chunks.append(data)
     if chunks and len(failures) / len(chunks) > 0.5:
+        detail = failures[0]["error"] if failures else "unknown chunk error"
         raise AgentPipelineError(
-            f"{len(failures)} of {len(chunks)} semantic chunks are missing or invalid; refusing to build a partial graph"
+            f"{len(failures)} of {len(chunks)} semantic chunks are missing or invalid; "
+            f"refusing to build a partial graph: {detail}"
         )
 
     semantic_new = _empty_extraction()
@@ -287,13 +349,6 @@ def build_agent_pipeline(
         semantic_new["input_tokens"] += int(data.get("input_tokens", 0) or 0)
         semantic_new["output_tokens"] += int(data.get("output_tokens", 0) or 0)
     _write_json(graph_dir / ".graphify_semantic_new.json", semantic_new)
-    save_semantic_cache(
-        semantic_new["nodes"],
-        semantic_new["edges"],
-        semantic_new["hyperedges"],
-        root=scan_root,
-        storage_root=output_root,
-    )
 
     cached_path = graph_dir / ".graphify_cached.json"
     cached = _read_json(cached_path, label="semantic cache result") if cached_path.exists() else _empty_extraction()
@@ -314,15 +369,40 @@ def build_agent_pipeline(
         "input_tokens": semantic_new["input_tokens"],
         "output_tokens": semantic_new["output_tokens"],
     }
-    _write_json(graph_dir / ".graphify_semantic.json", semantic)
-
     ast = _read_json(graph_dir / ".graphify_ast.json", label="AST extraction")
+    ast_node_ids = {
+        str(node.get("id")) for node in ast.get("nodes", [])
+        if isinstance(node, dict) and node.get("id") is not None
+    }
+    semantic_errors = validate_agent_extraction(
+        semantic,
+        external_node_ids=ast_node_ids,
+        require_resolved_endpoints=True,
+    )
+    if semantic_errors:
+        raise AgentPipelineError(
+            "combined semantic extraction is incompatible with the CosKnow contract: "
+            + format_agent_schema_errors(semantic_errors)
+        )
+    _write_json(graph_dir / ".graphify_semantic.json", semantic)
+    # Cache only data that passed both the per-chunk schema checks and the
+    # combined endpoint-resolution check above.
+    save_semantic_cache(
+        semantic_new["nodes"],
+        semantic_new["edges"],
+        semantic_new["hyperedges"],
+        root=scan_root,
+        storage_root=output_root,
+    )
+
     merged_nodes = list(ast.get("nodes", []))
     seen_nodes = {node.get("id") for node in merged_nodes if isinstance(node, dict)}
+    semantic_output_node_ids: set[str] = set()
     for node in semantic["nodes"]:
         if node.get("id") not in seen_nodes:
             merged_nodes.append(node)
             seen_nodes.add(node.get("id"))
+            semantic_output_node_ids.add(str(node.get("id")))
     extraction = {
         "nodes": merged_nodes,
         "edges": list(ast.get("edges", [])) + semantic["edges"],
@@ -345,10 +425,13 @@ def build_agent_pipeline(
     tokens = {"input": extraction["input_tokens"], "output": extraction["output_tokens"]}
 
     graph_path = graph_dir / "graph.json"
-    if not to_json(graph, communities, str(graph_path), force=force):
-        raise AgentPipelineError(
-            f"refused to shrink {graph_path}; use --force only when the reduction is intentional"
-        )
+    _write_compatible_graph(
+        graph,
+        communities,
+        graph_path,
+        semantic_node_ids=semantic_output_node_ids,
+        force=force,
+    )
     detection = _read_json(graph_dir / ".graphify_detect.json", label="detection result")
     report = generate(
         graph, communities, cohesion, placeholder_labels, gods, surprises,
@@ -444,7 +527,7 @@ def finalize_agent_pipeline(
     from graphify.analyze import suggest_questions
     from graphify.build import build_from_json
     from graphify.detect import save_manifest
-    from graphify.export import to_html, to_json
+    from graphify.export import to_html
     from graphify.report import generate
 
     scan_root, output_root, graph_dir = _paths(input_path, out_root)
@@ -485,8 +568,22 @@ def finalize_agent_pipeline(
     # Labels affect the report and HTML. graph.json remains the ordinary
     # node-link export produced without community_labels so its graph schema
     # does not vary with the display language chosen for community names.
-    if not to_json(graph, communities, str(graph_dir / "graph.json")):
-        raise AgentPipelineError("final graph unexpectedly failed the shrink guard")
+    semantic = _read_json(graph_dir / ".graphify_semantic.json", label="semantic extraction")
+    ast = _read_json(graph_dir / ".graphify_ast.json", label="AST extraction")
+    ast_node_ids = {
+        str(node.get("id")) for node in ast.get("nodes", [])
+        if isinstance(node, dict) and node.get("id") is not None
+    }
+    semantic_node_ids = {
+        str(node.get("id")) for node in semantic.get("nodes", [])
+        if isinstance(node, dict) and node.get("id") is not None
+    } - ast_node_ids
+    _write_compatible_graph(
+        graph,
+        communities,
+        graph_dir / "graph.json",
+        semantic_node_ids=semantic_node_ids,
+    )
 
     html_path = graph_dir / "graph.html"
     if no_viz:

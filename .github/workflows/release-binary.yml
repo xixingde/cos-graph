@@ -40,6 +40,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen --group dev
 
+      - name: Test standalone agent schema contract
+        run: uv run pytest tests/test_agent_schema.py tests/test_agent_pipeline.py -q
+
       - name: Build standalone binary with Nuitka
         shell: bash
         run: |
@@ -112,7 +115,7 @@ jobs:
 
           # Simulate a Windows agent/editor that writes UTF-8 JSON with a BOM.
           # agent-build must accept it and merge semantic data with AST output.
-          node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('agent-output/graphify-out/.graphify_agent_plan.json','utf8')); if(p.chunks.length!==1) process.exit(1); const src=p.chunks[0].files[0]; const chunk={nodes:[{id:'concept:multiplication-service',label:'Multiplication Service',type:'concept',file_type:'concept',source_file:src},{id:'concept:arithmetic',label:'Arithmetic',type:'concept',file_type:'concept',source_file:src}],edges:[{source:'concept:multiplication-service',target:'concept:arithmetic',relation:'performs',confidence:'EXTRACTED',confidence_score:1,source_file:src}],hyperedges:[],input_tokens:10,output_tokens:5}; fs.writeFileSync(p.chunks[0].output_path,'\ufeff'+JSON.stringify(chunk));"
+          node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('agent-output/graphify-out/.graphify_agent_plan.json','utf8')); if(p.chunks.length!==1) process.exit(1); const src=p.chunks[0].files[0]; const meta={entity_type:'concept'}; const chunk={nodes:[{id:'concept:multiplication-service',label:'Multiplication Service',file_type:'concept',source_file:src,metadata:meta},{id:'concept:arithmetic',label:'Arithmetic',file_type:'concept',source_file:src,metadata:meta},{id:'concept:operation',label:'Operation',file_type:'concept',source_file:src,metadata:meta}],edges:[{source:'concept:multiplication-service',target:'concept:arithmetic',relation:'conceptually_related_to',confidence:'EXTRACTED',confidence_score:1,source_file:src}],hyperedges:[{id:'hyperedge:arithmetic-service',nodes:['concept:multiplication-service','concept:arithmetic','concept:operation'],relation:'conceptually_related_to',confidence_score:1,source_file:src,metadata:{concept:'Arithmetic service'}}],input_tokens:10,output_tokens:5}; fs.writeFileSync(p.chunks[0].output_path,'\ufeff'+JSON.stringify(chunk));"
 
           env PATH="$(pwd)/no-python-path" "$ABS_BIN" agent-build agent-input \
             --out agent-output \
@@ -129,7 +132,7 @@ jobs:
           test -s agent-output/graphify-out/graph.json
           test -s agent-output/graphify-out/GRAPH_REPORT.md
           test -s agent-output/graphify-out/graph.html
-          node -e "const fs=require('fs'); const g=JSON.parse(fs.readFileSync('agent-output/graphify-out/graph.json','utf8')); if(!Array.isArray(g.links)||Object.prototype.hasOwnProperty.call(g,'edges')) process.exit(1);"
+          node -e "const fs=require('fs'); const g=JSON.parse(fs.readFileSync('agent-output/graphify-out/graph.json','utf8')); const semantic=g.nodes.filter(n=>String(n.id).startsWith('concept:')); const h=g.hyperedges[0]; if(!Array.isArray(g.links)||Object.prototype.hasOwnProperty.call(g,'edges')||semantic.some(n=>!n.metadata?.entity_type)||!h||!Array.isArray(h.nodes)||!h.relation||!h.metadata?.concept||g.graph.hyperedges[0].id!==h.id) process.exit(1);"
 
           env PATH="$(pwd)/no-python-path" "$ABS_BIN" vocab \
             --graph agent-output/graphify-out/graph.json \

@@ -153,11 +153,13 @@ def test_ast_nodes_win_over_semantic_duplicates(tmp_path: Path) -> None:
     ast = _read(graph_dir / ".graphify_ast.json")
     duplicate = dict(ast["nodes"][0])
     duplicate["label"] = "WRONG SEMANTIC OVERRIDE"
+    duplicate["metadata"] = {"entity_type": "code_symbol"}
     semantic_only = {
         "id": "concept:addition",
         "label": "Addition",
-        "type": "concept",
+        "file_type": "concept",
         "source_file": str(project / "README.md"),
+        "metadata": {"entity_type": "concept"},
     }
     chunk_path = Path(plan["chunks"][0]["output_path"])
     chunk_path.write_text(json.dumps({
@@ -177,3 +179,44 @@ def test_ast_nodes_win_over_semantic_duplicates(tmp_path: Path) -> None:
     assert by_id["concept:addition"]["label"] == "Addition"
     assert extraction["input_tokens"] == 10
     assert extraction["output_tokens"] == 5
+
+
+def test_build_rejects_incompatible_semantic_relation(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    output_root = project / ".csc" / "kb" / "repos"
+    project.mkdir()
+    readme = project / "README.md"
+    readme.write_text("# Addition service\n", encoding="utf-8")
+
+    plan = prepare_agent_pipeline(project, out_root=output_root, run_id="bad-relation", max_workers=1)
+    chunk_path = Path(plan["chunks"][0]["output_path"])
+    chunk_path.write_text(json.dumps({
+        "nodes": [
+            {
+                "id": "concept:addition",
+                "label": "Addition",
+                "file_type": "concept",
+                "source_file": str(readme),
+                "metadata": {"entity_type": "concept"},
+            },
+            {
+                "id": "concept:service",
+                "label": "Service",
+                "file_type": "concept",
+                "source_file": str(readme),
+                "metadata": {"entity_type": "concept"},
+            },
+        ],
+        "edges": [{
+            "source": "concept:addition",
+            "target": "concept:service",
+            "relation": "describes",
+            "confidence": "EXTRACTED",
+            "confidence_score": 0.9,
+            "source_file": str(readme),
+        }],
+        "hyperedges": [],
+    }), encoding="utf-8")
+
+    with pytest.raises(AgentPipelineError, match="relation 'describes'"):
+        build_agent_pipeline(project, out_root=output_root, run_id="bad-relation")
