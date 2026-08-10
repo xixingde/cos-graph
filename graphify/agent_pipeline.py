@@ -139,6 +139,7 @@ def prepare_agent_pipeline(
         ast = extract(
             code_files,
             cache_root=scan_root,
+            cache_storage_root=output_root,
             max_workers=max_workers,
             parallel=max_workers > 1,
         )
@@ -155,7 +156,9 @@ def prepare_agent_pipeline(
         for path in detection.get("files", {}).get(category, [])
     ]
     cached_nodes, cached_edges, cached_hyperedges, uncached = check_semantic_cache(
-        semantic_files, root=scan_root
+        semantic_files,
+        root=scan_root,
+        storage_root=output_root,
     )
     cached = {
         "nodes": cached_nodes,
@@ -285,7 +288,11 @@ def build_agent_pipeline(
         semantic_new["output_tokens"] += int(data.get("output_tokens", 0) or 0)
     _write_json(graph_dir / ".graphify_semantic_new.json", semantic_new)
     save_semantic_cache(
-        semantic_new["nodes"], semantic_new["edges"], semantic_new["hyperedges"], root=scan_root
+        semantic_new["nodes"],
+        semantic_new["edges"],
+        semantic_new["hyperedges"],
+        root=scan_root,
+        storage_root=output_root,
     )
 
     cached_path = graph_dir / ".graphify_cached.json"

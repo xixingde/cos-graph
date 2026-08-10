@@ -12304,20 +12304,21 @@ def _extract_single_file(args: tuple) -> tuple[int, dict]:
     ProcessPoolExecutor.
 
     Args:
-        args: (index, path_str, cache_root_str) tuple
+        args: (index, path_str, source_root_str, cache_storage_root_str) tuple
 
     Returns:
         (index, result_dict) so results can be placed back in order.
     """
-    idx, path_str, cache_root_str = args
+    idx, path_str, source_root_str, cache_storage_root_str = args
     path = Path(path_str)
-    cache_root = Path(cache_root_str)
+    source_root = Path(source_root_str)
+    cache_storage_root = Path(cache_storage_root_str)
     _raise_recursion_limit()
     bypass_cache = path.suffix in _JS_CACHE_BYPASS_SUFFIXES
 
     # Check cache first (avoid re-extraction)
     if not bypass_cache:
-        cached = load_cached(path, cache_root)
+        cached = load_cached(path, source_root, storage_root=cache_storage_root)
         if cached is not None:
             return idx, cached
 
@@ -12327,7 +12328,7 @@ def _extract_single_file(args: tuple) -> tuple[int, dict]:
 
     result = _safe_extract(extractor, path)
     if not bypass_cache and "error" not in result:
-        save_cached(path, result, cache_root)
+        save_cached(path, result, source_root, storage_root=cache_storage_root)
     return idx, result
 
 
@@ -12337,6 +12338,7 @@ def _extract_parallel(
     effective_root: Path,
     max_workers: int | None,
     total_files: int,
+    cache_storage_root: Path | None = None,
 ) -> bool:
     """Extract uncached files in parallel using ProcessPoolExecutor.
 
@@ -12373,7 +12375,8 @@ def _extract_parallel(
     max_workers = max(max_workers, 1)
 
     root_str = str(effective_root)
-    work_items = [(idx, str(path), root_str) for idx, path in uncached_work]
+    storage_root_str = str(cache_storage_root or effective_root)
+    work_items = [(idx, str(path), root_str, storage_root_str) for idx, path in uncached_work]
 
     done_count = 0
     _PROGRESS_INTERVAL = 100
@@ -12430,6 +12433,7 @@ def _extract_sequential(
     per_file: list[dict | None],
     effective_root: Path,
     total_files: int,
+    cache_storage_root: Path | None = None,
 ) -> None:
     """Extract uncached files sequentially (fallback for small batches)."""
     _PROGRESS_INTERVAL = 100
@@ -12450,7 +12454,12 @@ def _extract_sequential(
         bypass_cache = path.suffix in _JS_CACHE_BYPASS_SUFFIXES
         result = _safe_extract(extractor, path)
         if not bypass_cache and "error" not in result:
-            save_cached(path, result, effective_root)
+            save_cached(
+                path,
+                result,
+                effective_root,
+                storage_root=cache_storage_root or effective_root,
+            )
         per_file[idx] = result
     if total_files >= _PROGRESS_INTERVAL:
         print(f"  AST extraction: {total_files}/{total_files} files (100%)", flush=True)
@@ -12463,6 +12472,7 @@ def extract(
     paths: list[Path],
     cache_root: Path | None = None,
     *,
+    cache_storage_root: Path | None = None,
     parallel: bool = True,
     max_workers: int | None = None,
 ) -> dict:
@@ -12478,6 +12488,10 @@ def extract(
         cache_root: explicit root for graphify-out/cache/ (overrides the
             inferred common path prefix). Pass Path('.') when running on a
             subdirectory so the cache stays at ./graphify-out/cache/.
+        cache_storage_root: optional directory under which graphify-out/cache/
+            is stored. Cache keys and source_file paths remain relative to
+            cache_root, allowing callers to keep caches outside the scanned
+            source tree without changing graph output paths.
         parallel: if True and there are >= _PARALLEL_THRESHOLD uncached files,
             use ProcessPoolExecutor for multi-core extraction.
         max_workers: max subprocess count. Defaults to cpu_count (or the
@@ -12511,6 +12525,7 @@ def extract(
     root = root.resolve()
 
     effective_root = cache_root or root
+    effective_storage_root = cache_storage_root or effective_root
     total = len(paths)
 
     # Phase 1: separate cached hits from uncached work
@@ -12523,7 +12538,7 @@ def extract(
             continue
         bypass_cache = path.suffix in _JS_CACHE_BYPASS_SUFFIXES
         if not bypass_cache:
-            cached = load_cached(path, effective_root)
+            cached = load_cached(path, effective_root, storage_root=effective_storage_root)
             if cached is not None:
                 per_file[i] = cached
                 continue
@@ -12532,12 +12547,28 @@ def extract(
     # Phase 2: extract uncached files (parallel or sequential)
     if uncached_work:
         ran_parallel = False
+        storage_kwargs = (
+            {"cache_storage_root": effective_storage_root}
+            if cache_storage_root is not None
+            else {}
+        )
         if parallel and len(uncached_work) >= _PARALLEL_THRESHOLD:
             ran_parallel = _extract_parallel(
-                uncached_work, per_file, effective_root, max_workers, total
+                uncached_work,
+                per_file,
+                effective_root,
+                max_workers,
+                total,
+                **storage_kwargs,
             )
         if not ran_parallel:
-            _extract_sequential(uncached_work, per_file, effective_root, total)
+            _extract_sequential(
+                uncached_work,
+                per_file,
+                effective_root,
+                total,
+                **storage_kwargs,
+            )
 
     # Fill any remaining None slots (shouldn't happen, but defensive)
     for i in range(total):

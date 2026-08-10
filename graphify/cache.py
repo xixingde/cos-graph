@@ -152,7 +152,12 @@ def _normalize_path(path: Path) -> Path:
     return Path(os.path.normcase(s))
 
 
-def file_hash(path: Path, root: Path = Path(".")) -> str:
+def file_hash(
+    path: Path,
+    root: Path = Path("."),
+    *,
+    storage_root: Path | None = None,
+) -> str:
     """SHA256 of file contents + path relative to root.
 
     Uses a stat-based fastpath (size + mtime_ns) to skip full reads when the
@@ -172,7 +177,7 @@ def file_hash(path: Path, root: Path = Path(".")) -> str:
     if not p.is_file():
         raise IsADirectoryError(f"file_hash requires a file, got: {p}")
 
-    _ensure_stat_index(root)
+    _ensure_stat_index(storage_root or root)
     abs_key = str(p.resolve())
     st: "os.stat_result | None" = None
     try:
@@ -268,7 +273,12 @@ def _absolutize_source_files_in(payload: dict, root: Path) -> None:
                 continue
 
 
-def cache_dir(root: Path = Path("."), kind: str = "ast") -> Path:
+def cache_dir(
+    root: Path = Path("."),
+    kind: str = "ast",
+    *,
+    storage_root: Path | None = None,
+) -> Path:
     """Returns the cache directory for ``kind`` - creates it if needed.
 
     kind is "ast" or "semantic". Separate subdirectories prevent semantic cache
@@ -280,7 +290,8 @@ def cache_dir(root: Path = Path("."), kind: str = "ast") -> Path:
     (re-extraction costs LLM calls).
     """
     _out = Path(_GRAPHIFY_OUT)
-    base = _out if _out.is_absolute() else Path(root).resolve() / _out
+    base_root = storage_root or root
+    base = _out if _out.is_absolute() else Path(base_root).resolve() / _out
     d = base / "cache" / kind
     if kind == "ast":
         d = d / f"v{_EXTRACTOR_VERSION}"
@@ -289,7 +300,13 @@ def cache_dir(root: Path = Path("."), kind: str = "ast") -> Path:
     return d
 
 
-def load_cached(path: Path, root: Path = Path("."), kind: str = "ast") -> dict | None:
+def load_cached(
+    path: Path,
+    root: Path = Path("."),
+    kind: str = "ast",
+    *,
+    storage_root: Path | None = None,
+) -> dict | None:
     """Return cached extraction for this file if hash matches, else None.
 
     Cache key: SHA256 of file contents.
@@ -303,10 +320,10 @@ def load_cached(path: Path, root: Path = Path("."), kind: str = "ast") -> dict |
     Returns None if no cache entry or file has changed.
     """
     try:
-        h = file_hash(path, root)
+        h = file_hash(path, root, storage_root=storage_root)
     except OSError:
         return None
-    entry = cache_dir(root, kind) / f"{h}.json"
+    entry = cache_dir(root, kind, storage_root=storage_root) / f"{h}.json"
     if entry.exists():
         try:
             result = json.loads(entry.read_text(encoding="utf-8"))
@@ -321,7 +338,14 @@ def load_cached(path: Path, root: Path = Path("."), kind: str = "ast") -> dict |
     return None
 
 
-def save_cached(path: Path, result: dict, root: Path = Path("."), kind: str = "ast") -> None:
+def save_cached(
+    path: Path,
+    result: dict,
+    root: Path = Path("."),
+    kind: str = "ast",
+    *,
+    storage_root: Path | None = None,
+) -> None:
     """Save extraction result for this file.
 
     Stores as graphify-out/cache/{kind}/{hash}.json where hash = SHA256 of current file contents.
@@ -349,8 +373,8 @@ def save_cached(path: Path, result: dict, root: Path = Path("."), kind: str = "a
         import copy as _copy
         on_disk = _copy.deepcopy(result)
         _relativize_source_files_in(on_disk, root)
-    h = file_hash(p, root)
-    target_dir = cache_dir(root, kind)
+    h = file_hash(p, root, storage_root=storage_root)
+    target_dir = cache_dir(root, kind, storage_root=storage_root)
     entry = target_dir / f"{h}.json"
     fd, tmp_path = tempfile.mkstemp(dir=target_dir, prefix=f"{h}.", suffix=".tmp")
     try:
@@ -409,6 +433,8 @@ def clear_cache(root: Path = Path(".")) -> None:
 def check_semantic_cache(
     files: list[str],
     root: Path = Path("."),
+    *,
+    storage_root: Path | None = None,
 ) -> tuple[list[dict], list[dict], list[dict], list[str]]:
     """Check semantic extraction cache for a list of absolute file paths.
 
@@ -424,7 +450,7 @@ def check_semantic_cache(
         p = Path(fpath)
         if not p.is_absolute():
             p = Path(root) / p
-        result = load_cached(p, root, kind="semantic")
+        result = load_cached(p, root, kind="semantic", storage_root=storage_root)
         if result is not None:
             cached_nodes.extend(result.get("nodes", []))
             cached_edges.extend(result.get("edges", []))
@@ -440,6 +466,8 @@ def save_semantic_cache(
     edges: list[dict],
     hyperedges: list[dict] | None = None,
     root: Path = Path("."),
+    *,
+    storage_root: Path | None = None,
 ) -> int:
     """Save semantic extraction results to cache, keyed by source_file.
 
@@ -470,6 +498,6 @@ def save_semantic_cache(
         if not p.is_absolute():
             p = Path(root) / p
         if p.is_file():
-            save_cached(p, result, root, kind="semantic")
+            save_cached(p, result, root, kind="semantic", storage_root=storage_root)
             saved += 1
     return saved

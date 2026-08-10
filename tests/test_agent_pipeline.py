@@ -38,6 +38,8 @@ def test_code_only_pipeline_preserves_public_output_contract(tmp_path: Path, mon
     plan = prepare_agent_pipeline(project, out_root=output_root, run_id="contract", max_workers=1)
     assert plan["chunks"] == []
     graph_dir = output_root / "graphify-out"
+    assert (graph_dir / "cache" / "ast").is_dir()
+    assert not (project / "graphify-out").exists()
 
     built = build_agent_pipeline(project, out_root=output_root, run_id="contract")
     assert built["nodes"] > 0
@@ -167,6 +169,8 @@ def test_ast_nodes_win_over_semantic_duplicates(tmp_path: Path) -> None:
     }), encoding="utf-8-sig")
 
     build_agent_pipeline(project, out_root=output_root, run_id="merge")
+    assert (graph_dir / "cache" / "semantic").is_dir()
+    assert not (project / "graphify-out").exists()
     extraction = _read(graph_dir / ".graphify_extract.json")
     by_id = {node["id"]: node for node in extraction["nodes"]}
     assert by_id[duplicate["id"]]["label"] == ast["nodes"][0]["label"]
