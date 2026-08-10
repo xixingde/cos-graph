@@ -48,6 +48,10 @@ jobs:
             --onefile \
             --onefile-tempdir-spec="{TEMP}/graphify_{PID}_{TIME}" \
             --assume-yes-for-downloads \
+            --include-package=tree_sitter_javascript \
+            --include-package=tree_sitter_typescript \
+            --include-package-data=tree_sitter_javascript \
+            --include-package-data=tree_sitter_typescript \
             --include-data-dir="graphify/always_on=graphify/always_on" \
             --include-data-dir="graphify/skills=graphify/skills" \
             --include-data-files="graphify/skill*.md=graphify/" \
@@ -74,6 +78,8 @@ jobs:
 
           mkdir -p smoke-input
           printf 'def add(a, b):\n    return a + b\n' > smoke-input/example.py
+          printf 'function multiply(a, b) { return a * b; }\n' > smoke-input/example.js
+          printf 'export function formatUser(name: string): string { return name.trim(); }\n' > smoke-input/example.ts
 
           "$BIN" extract smoke-input \
             --out smoke-output \
@@ -81,6 +87,7 @@ jobs:
             --max-workers 1
 
           test -s smoke-output/graphify-out/graph.json
+          node -e "const fs=require('fs'); const g=JSON.parse(fs.readFileSync('smoke-output/graphify-out/graph.json','utf8')); const labels=g.nodes.map(n=>String(n.label)); if(!labels.some(x=>x.includes('multiply'))||!labels.some(x=>x.includes('formatUser'))) process.exit(1);"
           "$BIN" query "add" --graph smoke-output/graphify-out/graph.json
 
           # Exercise the staged CSC-agent pipeline with an intentionally tiny
@@ -91,6 +98,7 @@ jobs:
           for i in $(seq 1 25); do
             printf 'def multiply_%s(a, b):\n    return a * b\n' "$i" > "agent-input/example_${i}.py"
           done
+          printf 'export const divide = (a, b) => a / b;\n' > agent-input/example.js
           printf '# Multiplication service\n\nThe service performs arithmetic operations.\n' > agent-input/README.md
           ABS_BIN="$(pwd)/$BIN"
 
