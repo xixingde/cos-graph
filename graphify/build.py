@@ -474,10 +474,14 @@ def build_merge(
         links_key = "links" if "links" in data else "edges"
         existing_nodes = list(data.get("nodes", []))
         existing_edges = list(data.get(links_key, []))
+        existing_hyperedges = list(
+            data.get("hyperedges", data.get("graph", {}).get("hyperedges", []))
+        )
         had_graph = True
     else:
         existing_nodes = []
         existing_edges = []
+        existing_hyperedges = []
         had_graph = False
 
     # Re-extracted files REPLACE their prior contribution. Every source_file
@@ -492,22 +496,28 @@ def build_merge(
     _replace_root = str(Path(root).resolve()) if root is not None else None
     new_sources: set[str] = set()
     for ch in new_chunks:
-        for n in ch.get("nodes", []):
-            sf = n.get("source_file")
-            if not sf:
-                continue
-            new_sources.add(sf)
-            norm = _norm_source_file(sf, _replace_root)
-            if norm:
-                new_sources.add(norm)
+        for collection in ("nodes", "edges", "hyperedges"):
+            for item in ch.get(collection, []):
+                sf = item.get("source_file")
+                if not sf:
+                    continue
+                new_sources.add(sf)
+                norm = _norm_source_file(sf, _replace_root)
+                if norm:
+                    new_sources.add(norm)
     if new_sources:
         def _kept(item: dict) -> bool:
             sf = item.get("source_file")
             return sf not in new_sources and _norm_source_file(sf, _replace_root) not in new_sources
         existing_nodes = [n for n in existing_nodes if _kept(n)]
         existing_edges = [e for e in existing_edges if _kept(e)]
+        existing_hyperedges = [h for h in existing_hyperedges if _kept(h)]
 
-    base = [{"nodes": existing_nodes, "edges": existing_edges}] if had_graph else []
+    base = [{
+        "nodes": existing_nodes,
+        "edges": existing_edges,
+        "hyperedges": existing_hyperedges,
+    }] if had_graph else []
 
     all_chunks = base + list(new_chunks)
     G = build(all_chunks, directed=directed, dedup=dedup, dedup_llm_backend=dedup_llm_backend, root=root)
@@ -550,6 +560,27 @@ def build_merge(
             G.remove_edges_from(edges_to_remove)
             print(
                 f"[graphify] Pruned {len(edges_to_remove)} edge(s) from deleted source file(s).",
+                file=sys.stderr,
+            )
+
+        hyperedges = G.graph.get("hyperedges", [])
+        node_ids = {str(node_id) for node_id in G.nodes}
+        kept_hyperedges = []
+        for hyperedge in hyperedges:
+            source_file = hyperedge.get("source_file")
+            members = hyperedge.get("nodes", [])
+            if (
+                source_file in prune_set
+                or _norm_source_file(source_file, _root_str) in prune_set
+                or any(str(member) not in node_ids for member in members)
+            ):
+                continue
+            kept_hyperedges.append(hyperedge)
+        if len(kept_hyperedges) != len(hyperedges):
+            G.graph["hyperedges"] = kept_hyperedges
+            print(
+                f"[graphify] Pruned {len(hyperedges) - len(kept_hyperedges)} "
+                "hyperedge(s) from changed or deleted source file(s).",
                 file=sys.stderr,
             )
 

@@ -618,6 +618,48 @@ def test_build_merge_replaces_changed_file_stale_edges(tmp_path):
     assert ("K", "A") in edges, "unchanged file's edge must survive"
 
 
+def test_build_merge_preserves_and_prunes_hyperedges_by_source(tmp_path):
+    """Incremental updates retain untouched hyperedges and replace changed ones."""
+    import networkx as nx
+
+    root = tmp_path / "corpus"
+    root.mkdir()
+    graph_path = tmp_path / "graph.json"
+    initial = {
+        "nodes": [
+            {"id": "A", "label": "A", "source_file": "changed.md"},
+            {"id": "B", "label": "B", "source_file": "changed.md"},
+            {"id": "K1", "label": "K1", "source_file": "keep.md"},
+            {"id": "K2", "label": "K2", "source_file": "keep.md"},
+        ],
+        "edges": [],
+        "hyperedges": [
+            {"id": "changed-h", "nodes": ["A", "B"], "source_file": "changed.md"},
+            {"id": "keep-h", "nodes": ["K1", "K2"], "source_file": "keep.md"},
+        ],
+    }
+    graph = build([initial], dedup=False)
+    data = nx.node_link_data(graph, edges="links")
+    data["hyperedges"] = graph.graph["hyperedges"]
+    graph_path.write_text(json.dumps(data), encoding="utf-8")
+
+    replacement = {
+        "nodes": [
+            {"id": "A2", "label": "A2", "source_file": str(root / "changed.md")},
+            {"id": "B2", "label": "B2", "source_file": str(root / "changed.md")},
+        ],
+        "edges": [],
+        "hyperedges": [{
+            "id": "changed-h2",
+            "nodes": ["A2", "B2"],
+            "source_file": str(root / "changed.md"),
+        }],
+    }
+    merged = build_merge([replacement], graph_path, dedup=False, root=root)
+    hyperedge_ids = {item["id"] for item in merged.graph["hyperedges"]}
+    assert hyperedge_ids == {"changed-h2", "keep-h"}
+
+
 def test_build_merge_root_collapses_convention_drift(tmp_path):
     """Skill contract: the extraction subagent must emit source_file as the
     verbatim path from FILE_LIST AND the caller must pass root= (the build root).

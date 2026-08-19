@@ -2109,6 +2109,11 @@ def _run_agent_pipeline_command(command: str) -> None:
         parser.add_argument("--chunk-size", type=int, default=22)
         parser.add_argument("--directed", action="store_true")
         parser.add_argument("--mode", choices=["deep"], default=None)
+        parser.add_argument(
+            "--update",
+            action="store_true",
+            help="prepare only changed/deleted files using the existing manifest",
+        )
     elif command == "agent-build":
         parser.add_argument("--force", action="store_true")
     else:
@@ -2132,6 +2137,7 @@ def _run_agent_pipeline_command(command: str) -> None:
                     deep=options.mode == "deep",
                     chunk_size=options.chunk_size,
                     run_id=options.run_id,
+                    incremental=options.update,
                 )
             elif command == "agent-build":
                 result = build_agent_pipeline(
@@ -2289,6 +2295,7 @@ def main() -> None:
         print("    --global                also merge the resulting graph into the global graph")
         print("    --as <tag>              repo tag for --global (default: target directory name)")
         print("  agent-prepare <path>    prepare AST/cache inputs for an external-agent build")
+        print("    --update                prepare an incremental run from graph.json + manifest.json")
         print("    --out DIR               output root; writes <DIR>/graphify-out/")
         print("    --run-id ID             optional caller-provided run ID")
         print("    --mode deep             request aggressive semantic extraction from agents")

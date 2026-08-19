@@ -134,6 +134,26 @@ jobs:
           test -s agent-output/graphify-out/graph.html
           node -e "const fs=require('fs'); const g=JSON.parse(fs.readFileSync('agent-output/graphify-out/graph.json','utf8')); const semantic=g.nodes.filter(n=>String(n.id).startsWith('concept:')); const h=g.hyperedges[0]; if(!Array.isArray(g.links)||Object.prototype.hasOwnProperty.call(g,'edges')||semantic.some(n=>!n.metadata?.entity_type)||!h||!Array.isArray(h.nodes)||!h.relation||!h.metadata?.concept||g.graph.hyperedges[0].id!==h.id) process.exit(1);"
 
+          # Verify that the standalone binary can incrementally replace a
+          # changed file without Python and keep the public graph contract.
+          printf 'export const divideUpdated = (a, b) => a / b;\n' > agent-input/example.js
+          env PATH="$(pwd)/no-python-path" "$ABS_BIN" agent-prepare agent-input \
+            --out agent-output \
+            --run-id ci-update \
+            --max-workers 1 \
+            --update \
+            --json
+          env PATH="$(pwd)/no-python-path" "$ABS_BIN" agent-build agent-input \
+            --out agent-output \
+            --run-id ci-update \
+            --json
+          node -e "const fs=require('fs'); const p='agent-output/graphify-out/.graphify_analysis.json'; const a=JSON.parse(fs.readFileSync(p,'utf8')); const labels=Object.fromEntries(Object.keys(a.communities).map(k=>[k,'Updated Community '+k])); fs.writeFileSync('agent-output/graphify-out/.graphify_labels.json',JSON.stringify(labels));"
+          env PATH="$(pwd)/no-python-path" "$ABS_BIN" agent-finalize agent-input \
+            --out agent-output \
+            --run-id ci-update \
+            --json
+          node -e "const fs=require('fs'); const g=JSON.parse(fs.readFileSync('agent-output/graphify-out/graph.json','utf8')); const labels=g.nodes.map(n=>String(n.label)); if(!labels.some(x=>x.includes('divideUpdated'))||labels.some(x=>x==='divide')) process.exit(1);"
+
           env PATH="$(pwd)/no-python-path" "$ABS_BIN" vocab \
             --graph agent-output/graphify-out/graph.json \
             --output agent-output/graphify-out/.vocab.txt

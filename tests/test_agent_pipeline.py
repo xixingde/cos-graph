@@ -220,3 +220,75 @@ def test_build_rejects_incompatible_semantic_relation(tmp_path: Path) -> None:
 
     with pytest.raises(AgentPipelineError, match="relation 'describes'"):
         build_agent_pipeline(project, out_root=output_root, run_id="bad-relation")
+
+
+def test_incremental_pipeline_replaces_changes_prunes_deletions_and_detects_noop(
+    tmp_path: Path,
+) -> None:
+    project = tmp_path / "project"
+    output_root = project / ".csc" / "kb" / "repos"
+    project.mkdir()
+    changed = project / "changed.py"
+    deleted = project / "deleted.py"
+    changed.write_text("def add(a, b):\n    return a + b\n", encoding="utf-8")
+    deleted.write_text("def keep():\n    return True\n", encoding="utf-8")
+
+    prepare_agent_pipeline(project, out_root=output_root, run_id="full", max_workers=1)
+    build_agent_pipeline(project, out_root=output_root, run_id="full")
+    graph_dir = output_root / "graphify-out"
+    finalize_agent_pipeline(
+        project,
+        out_root=output_root,
+        run_id="full",
+        labels_path=_write_labels(graph_dir),
+    )
+
+    changed.write_text("def subtract(a, b):\n    return a - b\n", encoding="utf-8")
+    deleted.unlink()
+    plan = prepare_agent_pipeline(
+        project,
+        out_root=output_root,
+        run_id="incremental",
+        max_workers=1,
+        incremental=True,
+    )
+    assert plan["phase"] == "prepared"
+    assert plan["counts"]["changed_files"] == 1
+    assert plan["counts"]["deleted_files"] == 1
+
+    result = build_agent_pipeline(project, out_root=output_root, run_id="incremental")
+    assert result["incremental"] is True
+    finalize_agent_pipeline(
+        project,
+        out_root=output_root,
+        run_id="incremental",
+        labels_path=_write_labels(graph_dir),
+    )
+    graph = _read(graph_dir / "graph.json")
+    labels = {str(node.get("label")) for node in graph["nodes"]}
+    assert any("subtract" in label for label in labels)
+    assert not any("add" in label for label in labels)
+    assert not any("keep" in label for label in labels)
+
+    noop = prepare_agent_pipeline(
+        project,
+        out_root=output_root,
+        run_id="noop",
+        max_workers=1,
+        incremental=True,
+    )
+    assert noop["phase"] == "noop"
+    assert noop["counts"]["changed_files"] == 0
+    assert noop["counts"]["deleted_files"] == 0
+
+    wrong_root = tmp_path / "wrong-project"
+    wrong_root.mkdir()
+    (wrong_root / "other.py").write_text("def other():\n    pass\n", encoding="utf-8")
+    with pytest.raises(AgentPipelineError, match="input root mismatch"):
+        prepare_agent_pipeline(
+            wrong_root,
+            out_root=output_root,
+            run_id="wrong-root",
+            max_workers=1,
+            incremental=True,
+        )
